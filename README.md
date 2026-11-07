@@ -8,6 +8,10 @@
 node tools/make-video.mjs --repo https://github.com/webkubor/dsh-bloom-theme --out ./my-video
 ```
 
+> **已验证**：从干净 clone 出发，`python engine/get_fonts.py` 下载 14 个字体（43.4MB），
+> 再跑 `make-video.mjs --skip-render`，内容抽取、GitHub 截图、配音、7 条字幕、模板全部走通。
+> 仓库是自包含的，不需要任何本地残留文件。
+
 ---
 
 ## 它长什么样
@@ -243,6 +247,24 @@ function card2(fr, lt) {           // 第二张卡
 3. **GitHub 截图可能失败** — 网络或反爬，失败也能出片，只少那张
 4. **克隆有 180 秒上限** — 大仓库可能超时，需手工放 `_repos/`
 5. **渲染 3–6 分钟** — 1044 帧，慢是正常的
+
+---
+
+## 上传到 GitHub
+
+仓库根目录有一个现成的 `push-to-github.py`，token 只走命令行、不写进 `.git/config`：
+
+```bash
+# 1. 建 token：https://github.com/settings/tokens/new  （只勾 repo）
+# 2. 推送
+python tools/push-to-github.py --token ghp_xxxxxxxx
+```
+
+它会验证 token、建仓库、推送，然后把 `origin` 设成不带 token 的干净地址。
+
+不想用命令行的话：`git archive --format=zip -o video-kit.zip HEAD` 打个包，
+在 GitHub 网页上新建空仓库，拖进去上传即可。
+
 
 ---
 
