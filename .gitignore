@@ -1,0 +1,42 @@
+# ── 字体：43MB，跑一次 python engine/get_fonts.py 自动下载 ──
+engine/fonts/
+*.ttf
+*.otf
+
+# ── 渲染产物 ──
+renders/
+review/
+_repos/
+*.mp4
+*.gif
+
+# ── 单个视频工程的中间产物（不该进仓库）──
+/content.json
+/content.js
+/film.js
+/index.html
+/audio/*.mp3
+/audio/*.srt
+/audio/*.json
+/audio/*.js
+/audio/*.wav
+/assets/*.png
+/assets/*.json
+
+# 配乐例外：这 6 首要跟着仓库走
+!/audio/bgm/*.mp3
+
+# ── Python ──
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ── Node ──
+node_modules/
+package-lock.json
+
+# ── 系统 ──
+.DS_Store
+Thumbs.db
+desktop.ini
