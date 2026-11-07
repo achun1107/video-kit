@@ -34,8 +34,12 @@ function arg(name, def) {
 const has = n => process.argv.includes(n);
 
 const repoArg = arg('--repo');
-if (!repoArg) {
-  console.error('用法: node tools/make-video.mjs --repo <url|目录> --out <工程目录> [--skip-render] [--reset-film]');
+const douyinInput = arg('--douyin');
+if (!repoArg && !douyinInput) {
+  console.error('用法:');
+  console.error('  node tools/make-video.mjs --repo <github url|本地目录> --out <工程目录>');
+  console.error('  node tools/make-video.mjs --douyin <抖音分享链接> --out <工程目录>');
+  console.error('可选: [--skip-render] [--reset-film] [--reset-html] [--music mp3] [--asr-model small]');
   process.exit(2);
 }
 const out = resolve(arg('--out', './video-out'));
@@ -84,47 +88,119 @@ if (existsSync(kitFonts)) {
   if (n) console.log(`  + engine/fonts/ (${n} 个字体文件)`);
 }
 
-/* index.html：优先用 KIT 那份（含 @font-face），再补 subs.js */
+/* index.html：用 tools/index.template.html（竖屏 VK_SIZE + content.js + subs.js）。
+ * 不要从 engine/index.html 复制 —— 那份是横屏的，会让卡片内容空白、画幅变 16:9。 */
 const idx = join(out, 'index.html');
-if (!existsSync(idx)) {
-  const kitIdx = join(KIT, 'engine', 'index.html');
-  let html = '';
-  if (existsSync(kitIdx)) html = readFileSync(kitIdx, 'utf8');
-  if (!html) {
-    html = '<!doctype html><html lang="zh"><head><meta charset="utf-8">\n<style>\n'
-      + '@font-face{font-family:"VK Serif";src:url("engine/fonts/NotoSerifSC-VF.ttf");font-weight:200 900}\n'
-      + '@font-face{font-family:"VK Sans"; src:url("engine/fonts/NotoSansSC-VF.ttf"); font-weight:100 900}\n'
-      + '@font-face{font-family:"VK Latin";src:url("engine/fonts/CormorantGaramond.ttf");font-weight:300 700}\n'
-      + '@font-face{font-family:"VK Mono"; src:url("engine/fonts/JetBrainsMono.ttf");font-weight:100 800}\n'
-      + 'html,body{margin:0;background:#000;overflow:hidden}\n'
-      + 'canvas{display:block;width:100vw;height:177.78vw;max-height:100vh;max-width:56.25vh}\n'
-      + '</style></head><body><canvas id="stage"></canvas>\n'
-      + '<script>window.VK_SIZE = { w: 1080, h: 1920 };</script>\n'
-      + '<script src="engine/vk.js"></script>\n'
-      + '<script src="engine/vk-kit.js"></script>\n'
-      + '<script src="content.js"></script>\n'
-      + '<script src="audio/subs.js"></script>\n'
-      + '<script src="film.js"></script>\n'
-      + '</body></html>';
-  } else if (!html.includes('audio/subs.js')) {
-    html = html.replace('<script src="film.js">', '<script src="audio/subs.js"></script>\n<script src="film.js">');
+if (!existsSync(idx) || has('--reset-html')) {
+  const tpl = join(KIT, 'tools', 'index.template.html');
+  if (!existsSync(tpl)) sys.exit('缺少 tools/index.template.html');
+  writeFileSync(idx, readFileSync(tpl, 'utf8'), 'utf8');
+  console.log('  + index.html（竖屏模板）');
+}
+
+/* ══ 0.5 抖音链接：先下载原片、逆向、找仓库 ══ */
+const douyinArg = arg('--douyin');
+let repoArgFinal = repoArg;
+
+if (douyinArg) {
+  step(0.5, '抖音：下载原视频并逆向');
+  const work = join(out, 'douyin');
+  mkdirSync(work, { recursive: true });
+
+  // 1) 解析链接 → 视频列表
+  const resolveJson = join(work, 'resolve.json');
+  run(PY, [join(KIT, 'tools', 'douyin-resolve.py'), douyinArg, '--json', resolveJson, '--max', '10']);
+  let resolved = { videos: [] };
+  try { resolved = JSON.parse(readFileSync(resolveJson, 'utf8')); } catch { }
+  if (!resolved.videos || !resolved.videos.length) {
+    sys.exit('× 抖音链接里没解析出视频');
   }
-  writeFileSync(idx, html, 'utf8');
-  console.log('  + index.html');
+  const pick = resolved.videos[0];
+  console.log(`  选中视频：${pick.id}`);
+
+  // 2) 下载
+  const dlDir = join(work, 'dl');
+  if (!has('--skip-download')) {
+    run(PY, [join(KIT, 'tools', 'douyin-download.py'), pick.id, '-o', dlDir]);
+  }
+  const mp4 = readdirSync(dlDir).filter(f => f.endsWith('.mp4'))
+    .map(f => join(dlDir, f))[0];
+  if (!mp4 || !existsSync(mp4)) sys.exit('× 视频没下载下来');
+  console.log(`  原片：${mp4}`);
+
+  // 3) 转写
+  const asrJson = join(work, 'asr.json');
+  if (!existsSync(asrJson) || has('--reset-asr')) {
+    run(PY, [join(KIT, 'tools', 'transcribe-local.py'), mp4,
+             '--model', arg('--asr-model', 'small'), '--out', asrJson]);
+  }
+  let asr = { full: '', repos: [] };
+  try { asr = JSON.parse(readFileSync(asrJson, 'utf8')); } catch { }
+
+  // 4) 决定仓库
+  let repoFromVideo = (asr.repos && asr.repos[0]) || null;
+  if (!repoFromVideo) {
+    // 从标题和全文里找已知工具名 → 仓库
+    const KNOWN = [
+      // [匹配词, 仓库] —— 含转写常见误听
+      ['hyperframes', 'heygen-com/hyperframes'],
+      ['hyper frames', 'heygen-com/hyperframes'],
+      ['happy frames', 'heygen-com/hyperframes'],   // whisper 常把 HyperFrames 听成这个
+      ['hyperframe', 'heygen-com/hyperframes'],
+      ['video-use', 'browser-use/video-use'],
+      ['video use', 'browser-use/video-use'],
+      ['videouse', 'browser-use/video-use'],
+      ['remotion', 'remotion-dev/remotion'],
+      ['generative media', ''],
+      ['seedance', ''],
+    ];
+    const titleLow = String(resolved.title || '').toLowerCase();
+    const bodyLow = String(asr.full || '').toLowerCase();
+    // 标题里出现的最可信，其次才是正文
+    for (const [needle, slug] of KNOWN) {
+      if (slug && titleLow.includes(needle)) { repoFromVideo = slug; break; }
+    }
+    if (!repoFromVideo) {
+      for (const [needle, slug] of KNOWN) {
+        if (slug && bodyLow.includes(needle)) { repoFromVideo = slug; break; }
+      }
+    }
+  }
+  if (!repoFromVideo) {
+    console.warn('  转写和标题里都没找到仓库地址');
+    console.warn('  可以用 --repo 手工指定，流程继续');
+    if (!has('--repo')) {
+      sys.exit('× 需要 --repo <owner/repo> 指定要讲哪个仓库');
+    }
+  } else {
+    console.log(`  视频里讲的是：${repoFromVideo}`);
+    repoArgFinal = repoFromVideo;
+  }
+
+  // 5) 用 API 直接生成 content.json（大仓库 clone 会超时）
+  if (!has('--repo') || repoFromVideo) {
+    try {
+      run(PY, [join(KIT, 'tools', 'repo-content.py'), repoArgFinal,
+               '-o', join(out, 'content.json'),
+               ...(process.env.GITHUB_TOKEN ? ['--token', process.env.GITHUB_TOKEN] : [])]);
+    } catch (e) {
+      console.warn('  API 抽内容失败，退回 clone：', e.message);
+    }
+  }
 }
 
 /* ══ 1. 仓库就位 ══ */
 step(1, '仓库就位');
 let repoDir = null;
-if (/^https?:\/\//.test(repoArg) || repoArg.startsWith('git@')) {
-  const name = basename(repoArg).replace(/\.git$/, '');
+if (/^https?:\/\//.test(repoArgFinal) || repoArgFinal.startsWith('git@')) {
+  const name = basename(repoArgFinal).replace(/\.git$/, '');
   repoDir = join(out, '_repos', name);
   mkdirSync(dirname(repoDir), { recursive: true });
   if (existsSync(join(repoDir, '.git'))) {
     try { execFileSync('git', ['-C', repoDir, 'fetch', '--depth', '1', 'origin'], { stdio: 'ignore' }); } catch { }
     console.log(`  用已有副本 ${repoDir}`);
   } else {
-    console.log(`  浅克隆 ${repoArg}`);
+    console.log(`  浅克隆 ${repoArgFinal}`);
     try {
       execFileSync('git', ['-c', 'credential.helper=', 'clone', '--depth', '1', repoArg, repoDir],
                    { cwd: out, stdio: 'inherit', timeout: 180000 });
@@ -134,7 +210,7 @@ if (/^https?:\/\//.test(repoArg) || repoArg.startsWith('git@')) {
     }
   }
 } else {
-  repoDir = resolve(repoArg);
+  repoDir = resolve(repoArgFinal);
   console.log(`  本地目录 ${repoDir}`);
 }
 
@@ -149,7 +225,7 @@ if (repoDir && existsSync(repoDir)) {
 }
 if (!existsSync(join(out, 'content.json'))) {
   writeFileSync(join(out, 'content.json'), JSON.stringify({
-    repo: basename(repoArg).replace(/\.git$/, ''), namePlain: '这个项目',
+    repo: basename(repoArgFinal).replace(/\.git$/, ''), namePlain: '这个项目',
     emoji: '📦', headline: '一个值得看的开源项目', tagline: '', version: '',
     stats: {}, features: [], chapters: [],
   }, null, 2), 'utf8');
@@ -161,9 +237,9 @@ console.log(`  ${content.namePlain || content.name} / ${content.headline || ''}`
 /* ══ 3. 截图 ══ */
 step(3, '截 GitHub 截图');
 try {
-  const url = /^https?:\/\//.test(repoArg)
-    ? repoArg.replace(/\.git$/, '')
-    : `https://github.com/${content.repo || basename(repoArg)}`;
+  const url = /^https?:\/\//.test(repoArgFinal)
+    ? repoArgFinal.replace(/\.git$/, '')
+    : `https://github.com/${content.repo || basename(repoArgFinal)}`;
   run(PY, [join(out, 'tools', 'shot-github.py'), url, '-o', join(out, 'assets', 'repo.png'),
            '--mode', 'viewport', '--height', '1100']);
 } catch {

@@ -1,22 +1,70 @@
 # video-kit
 
-**一条命令，把任意 GitHub 仓库变成一条竖屏讲解视频。**
+**一条命令，把 GitHub 仓库——或者一条抖音视频——变成一条竖屏讲解视频。**
 
-输入一个仓库地址，输出 1080×1920 / 34.8 秒 / 带中文解说和配乐的成片——卡片、截图、字幕、音效全部自动。
+输出 1080×1920 / 34.8 秒 / 带中文解说和配乐的成片，卡片、截图、字幕、音效全部自动。
 
 ```bash
+# 输入 1：GitHub 仓库
 node tools/make-video.mjs --repo https://github.com/webkubor/dsh-bloom-theme --out ./my-video
+
+# 输入 2：抖音分享链接（自动下载原片 → 转写 → 找出视频里讲的仓库 → 重新出片）
+node tools/make-video.mjs --douyin "https://v.douyin.com/xxxxxx/" --out ./my-video
 ```
 
-> **已验证**：从干净 clone 出发，`python engine/get_fonts.py` 下载 14 个字体（43.4MB），
-> 再跑 `make-video.mjs --skip-render`，内容抽取、GitHub 截图、配音、7 条字幕、模板全部走通。
-> 仓库是自包含的，不需要任何本地残留文件。
+> **已验证**：
+> - 从干净 clone 出发，`get_fonts.py` 下 14 个字体（43.4MB），`--skip-render` 全流程走通
+> - 抖音链路实测：主页分享链接 → 抓到 20 条视频 → 下载原片 → 本地转写 306 字 →
+>   识别出 `heygen-com/hyperframes`（80464 star）→ 生成 content.json + 9 条字幕
+
+---
+
+## 两种输入
+
+### 1. GitHub 仓库
+
+```bash
+node tools/make-video.mjs --repo <url 或本地目录> --out <工程目录>
+```
+
+浅克隆（180 秒上限，大仓库会超时）→ 抽内容 → 截图 → 配音 → 渲染。
+
+### 2. 抖音视频链接
+
+```bash
+node tools/make-video.mjs --douyin "https://v.douyin.com/xxxx/" --out <工程目录>
+```
+
+抖音分享链接有两种，脚本都能处理：
+
+| 类型 | 重定向到 | 处理 |
+|---|---|---|
+| **视频分享** | `/share/video/<id>` | 直接拿到 id |
+| **主页分享** | `/share/user/<sec_uid>` | 打开主页，拦截 API + 滚动抓视频列表 |
+
+拿到视频后的流程：
+
+```
+下载原片（提取 mp4 直链，绕过 yt-dlp）
+  ↓
+本地转写（faster-whisper，不依赖网络）
+  ↓
+从转写文本 + 标题里找仓库
+  ↓  （转写会把英文专名听错，映射表带误听变体：
+  ↓    HyperFrames → "Happy Frames" / video-use → "Videos"）
+用 GitHub API 生成 content.json（大仓库 clone 会超时，API 更快）
+  ↓
+走原来的出片流程
+```
+
+**抖音反爬是怎么绕过的**：yt-dlp 会报 `Fresh cookies are needed`，即使从浏览器导出 cookie 也不行。所以改成用 Playwright 打开页面，直接从 `RENDER_DATA` 和 `video[src]` 里挖 mp4 直链，并把 `playwm` 换成 `play` 去水印。
 
 ---
 
 ## 它长什么样
 
 七张卡，固定结构，内容全部来自仓库：
+
 
 ```
 ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐
@@ -168,6 +216,25 @@ python tools/make-player-html.py <工程>/renders/final.mp4 \
 | Monkeys Spinning Monkeys | 71 | 梗曲 |
 | Sneaky Snitch | 22 | 悬疑 |
 | Wallpaper | 40 | 最安静 |
+
+---
+
+## 参数
+
+```
+--repo <url|目录>      输入 GitHub 仓库（和 --douyin 二选一）
+--douyin <分享链接>    输入抖音视频链接（和 --repo 二选一）
+--out <目录>          默认 ./video-out
+--skip-render         只做到「配音 + 模板」，不渲染
+--reset-film          用模板覆盖已有的 film.js
+--reset-html          重新生成 index.html
+--music <mp3>         换配乐，默认 Carefree
+--asr-model <size>    抖音转写用的模型，默认 small（可选 medium / large-v3）
+--skip-download       抖音流程跳过下载（复用已有文件）
+--reset-asr           抖音流程强制重新转写
+```
+
+环境变量 `GITHUB_TOKEN` 有值时，抖音流程会用它调 API 抽内容（避免 403 和 clone 超时）。
 
 ---
 
