@@ -83,12 +83,14 @@ STYLE_BONES = {
         'close': '想看的搜仓库名，免费的。',
     },
     # 产品语气：像发布会介绍
+    # 字数要够（配音撑满 34.8 秒），所以多两句：适用场景 + 门槛
     'weitu': {
         'hook': '刚开源',
         'open': '{name}，{head}。',
-        'feat': '核心能力：{items}。',
-        'data': '上线不久已经 {star} 星。',
-        'close': '支持多平台，装好就能跑。',
+        'feat': '核心能力包括：{items}。',
+        'scene': '用得上的场景挺多，自己折腾项目、团队内部工具、给别人交付，都能省事。',
+        'data': '项目上线不久，GitHub 上已经拿到 {star} 星。',
+        'close': '完全开源，装上就能跑，不挑系统。',
     },
 }
 
@@ -130,6 +132,8 @@ def styled_script(c, style):
     ]
     if items:
         p1.append(bone['feat'].format(items=items_s))
+    if bone.get('scene'):
+        p1.append(bone['scene'])
     if star:
         p1.append(bone['data'].format(star=star_s))
 
