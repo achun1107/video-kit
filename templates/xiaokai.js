@@ -259,6 +259,30 @@ const CUES = [
   [DUR - 1.2, 'hush'],
 ];
 
+
+/* 段切换：进入时缩放冲击 + 上移，不是纯淡入。
+ * 人的眼睛对变化敏感，纯淡入在抖音上会被当成静态图划走。 */
+function cut(fr, t, a, b, fn) {
+  if (t < a || t >= b) return;
+
+  // 硬切：透明度直接 1，不淡入。淡化在抖音上会被当成静态图。
+  // 只靠缩放 + 位移制造"变化感"。
+  const kin = seg(t, a, Math.min(a + 0.30, b));
+  const e = E.out3(kin);
+  const s = 1 + 0.09 * (1 - e);         // 1.09 → 1.0
+  const dy = 38 * (1 - e);              // 下 38px → 0
+
+  // 退出只留 0.05 秒淡出（切走时不硬切，避免闪）
+  const kout = seg(t, b - 0.05, b);
+  const kk = 1 - kout;
+
+  // 围绕画面中心缩放：canvas 是 translate→scale，中心不动需要 dx = cx*(1-s)
+  fr.g({
+    a: kk, s,
+    at: [W / 2 * (1 - s), H / 2 * (1 - s) + dy],
+  }, () => fn(fr, t - a));
+}
+
 VK.film({
   dur: DUR, fps: 30, theme: 'flat',
   meta: { root: 0, drone: 0.42 },
@@ -275,13 +299,7 @@ VK.film({
       [T.c4, T.c5, card4], [T.c5, T.c6, card5], [T.c6, DUR, card6],
     ];
 
-    segs.forEach(sg => {
-      const a = sg[0], b = sg[1], fn = sg[2];
-      if (t < a || t >= b) return;
-      const kk = Math.min(seg(t, a, a + 0.05), 1 - seg(t, b - 0.04, b));
-      if (kk <= 0.002) return;
-      fr.g({ a: kk }, () => fn(fr, t - a));
-    });
+    segs.forEach(sg => cut(fr, t, sg[0], sg[1], sg[2]));
 
     subtitles(fr, t);
 
