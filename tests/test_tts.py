@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'tools'))
 
-from tts import srt_time, parse_srt
+from tts import parse_srt, srt_time
 
 
 class TestSrtTime:

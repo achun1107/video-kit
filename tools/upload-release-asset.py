@@ -6,8 +6,8 @@ curl 的 --data-binary 对 8MB 二进制不太稳，用 urllib 直接发。
 import json
 import os
 import sys
-import urllib.request
 import urllib.error
+import urllib.request
 
 TOKEN = os.environ.get('GITHUB_TOKEN', '')
 if not TOKEN:
@@ -69,4 +69,4 @@ try:
         print(f"  {d['browser_download_url']}")
 except urllib.error.HTTPError as e:
     print('×', e.code, e.read().decode()[:400])
-    raise SystemExit(1)
+    raise SystemExit(1) from None

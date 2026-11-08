@@ -7,8 +7,14 @@
   python tools/douyin-download.py <视频URL 或 ID> -o <输出目录>
   python tools/douyin-download.py 7662716941353749775 -o douyin/dl
 """
-import sys, re, json, urllib.parse, urllib.request, subprocess
+import contextlib
+import re
+import subprocess
+import sys
+import urllib.parse
+import urllib.request
 from pathlib import Path
+
 from playwright.sync_api import sync_playwright
 
 UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
@@ -96,15 +102,11 @@ def main():
         ctx = b.new_context(user_agent=UA, viewport={'width': 1280, 'height': 900},
                             locale='zh-CN', extra_http_headers={'Referer': 'https://www.douyin.com/'})
         pg = ctx.new_page()
-        try:
+        with contextlib.suppress(Exception):
             pg.goto(url, wait_until='domcontentloaded', timeout=45000)
-        except Exception:
-            pass
         pg.wait_for_timeout(5000)
-        try:
+        with contextlib.suppress(Exception):
             pg.wait_for_selector('video', timeout=8000)
-        except Exception:
-            pass
         html = pg.content()
         title = pg.title()
         # 页面上的 video 标签 src 也可能是直链

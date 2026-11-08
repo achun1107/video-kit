@@ -7,8 +7,10 @@ hyperframes 那条片的切换点在 1.15 / 2.00 / 8.30 / 10.40 / 13.95 / 17.75 
 
 为什么不用 GIF：2MB+ 会拖慢 README 首屏，完整视频放 Release 附件。
 """
-import subprocess
+import contextlib
 import os
+import subprocess
+
 from PIL import Image, ImageDraw, ImageFont
 
 SRC = r'D:\DSH\achun\video-hyperframes\renders\final.mp4'
@@ -25,10 +27,8 @@ def font(size, bold=False):
     p = os.path.join(FONT_DIR, 'NotoSansSC-VF.ttf')
     if os.path.exists(p):
         f = ImageFont.truetype(p, size)
-        try:
+        with contextlib.suppress(Exception):
             f.set_variation_by_axes([700 if bold else 400])
-        except Exception:
-            pass
         return f
     return ImageFont.load_default()
 
@@ -67,7 +67,7 @@ label_y = PAD + HEAD_H
 
 # ── 三帧 ──
 top = label_y + LABEL_H
-for i, (img, label) in enumerate(zip(frames, labels)):
+for i, (img, label) in enumerate(zip(frames, labels, strict=False)):
     x = PAD + i * (CELL_W + GAP)
     mask = Image.new('L', img.size, 0)
     ImageDraw.Draw(mask).rounded_rectangle([0, 0, img.width, img.height], 18, fill=255)
@@ -83,11 +83,7 @@ im.save(out, optimize=True)
 print(f'{out}  {W}x{H}  {os.path.getsize(out)/1024:.0f} KB')
 
 for i in range(len(TIMES)):
-    try:
+    with contextlib.suppress(Exception):
         os.remove(f'_tmp_frames/f{i}.png')
-    except Exception:
-        pass
-try:
+with contextlib.suppress(Exception):
     os.rmdir('_tmp_frames')
-except Exception:
-    pass

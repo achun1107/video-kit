@@ -10,10 +10,16 @@
 
 输出候选列表，按「star 接近度 + 关键词命中」排序。
 """
-import sys, json, re, os, urllib.request, urllib.parse, urllib.error
+import json
+import os
+import re
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from asrfix import fix_text, clean_keywords
+from asrfix import clean_keywords, fix_text
 
 
 def arg(n, d=None):
@@ -152,8 +158,7 @@ def find_star_hint(text):
 STOP_CN = set('这个那个一个什么可以就是不是还有然后所以但是因为如果虽然我的你的他的'
               '已经能够支持使用起来进去出来时候东西一起一样非常特别真的确实比较'
               '功能项目开源框架工具直接自动全部完全免费大家我们你们他们现在知道')
-STOP_EN = set('the and for you with this that can not are was were codex gpt ai skill skills '
-              'github star mcp api app use using open source'.split())
+STOP_EN = set(['the', 'and', 'for', 'you', 'with', 'this', 'that', 'can', 'not', 'are', 'was', 'were', 'codex', 'gpt', 'ai', 'skill', 'skills', 'github', 'star', 'mcp', 'api', 'app', 'use', 'using', 'open', 'source'])
 
 
 # 公司 / 组织 → GitHub org。口播里提公司名是最强的定位线索。
@@ -318,7 +323,7 @@ def main():
         queries.append(f'org:{org} stars:>1000')
         for kw in kws[:2]:
             queries.append(f'org:{org} {kw}')
-    for n, _ in hints[:2]:
+    for _n, _ in hints[:2]:
         for kw in kws[:4]:
             queries.append(f'{kw} stars:>1000')
     for kw in kws[:6]:

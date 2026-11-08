@@ -4,8 +4,9 @@
   python tools/glyph-metrics.py <图> [--region bottom]
 """
 import sys
-from PIL import Image
+
 import numpy as np
+from PIL import Image
 
 path = sys.argv[1]
 region = sys.argv[sys.argv.index('--region') + 1] if '--region' in sys.argv else 'bottom'
@@ -32,7 +33,8 @@ idx = np.where(active)[0]
 segs, s = [], idx[0]
 for i in range(1, len(idx)):
     if idx[i] != idx[i-1] + 1:
-        segs.append((s, idx[i-1])); s = idx[i]
+        segs.append((s, idx[i-1]))
+        s = idx[i]
 segs.append((s, idx[-1]))
 
 print(f'图 {W}x{H}  区域 y={y0}-{y1}')

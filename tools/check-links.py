@@ -11,10 +11,10 @@
 """
 import re
 import sys
-import urllib.request
 import urllib.error
-from pathlib import Path
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 

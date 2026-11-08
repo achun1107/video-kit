@@ -3,7 +3,11 @@
 
   python tools/make-player-html.py renders/final.mp4 -o renders/player.html
 """
-import sys, base64, subprocess, io, os, tempfile
+import base64
+import os
+import subprocess
+import sys
+import tempfile
 
 src = sys.argv[1]
 def opt(n, d): return sys.argv[sys.argv.index(n) + 1] if n in sys.argv else d
@@ -45,7 +49,7 @@ html = f"""<!doctype html>
 """
 
 os.makedirs(os.path.dirname(out) or '.', exist_ok=True)
-with io.open(out, 'w', encoding='utf-8') as f:
+with open(out, 'w', encoding='utf-8') as f:
     f.write(html)
 
 print(f'{out}  {os.path.getsize(out)/1024/1024:.2f} MB  (视频 {size/1024/1024:.2f} MB → base64 {len(b64)/1024/1024:.2f} MB)')

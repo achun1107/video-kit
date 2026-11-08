@@ -7,7 +7,10 @@
 为什么不用 whisperx：whisperx 的 alignment 模型经常加载失败，faster-whisper
 只做识别不做对齐，胜在稳、快、零依赖网络。
 """
-import sys, re, json, subprocess, tempfile, os
+import json
+import re
+import subprocess
+import sys
 from pathlib import Path
 
 

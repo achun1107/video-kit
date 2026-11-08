@@ -15,7 +15,14 @@
 工程目录里只需要 index.html + film.js。引擎（vk.js、vk-kit.js、fonts/）留在本文件所在目录，
 由内置的小服务器挂到 /engine/ 下 —— 不用往每个工程里拷 40MB 字体，也没有 file:// 的跨目录字体限制。
 """
-import functools, hashlib, http.server, io, json, random, subprocess, sys, threading
+import hashlib
+import http.server
+import io
+import json
+import random
+import subprocess
+import sys
+import threading
 from pathlib import Path
 
 ENGINE = Path(__file__).resolve().parent

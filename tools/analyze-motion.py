@@ -4,10 +4,12 @@
   python tools/analyze-motion.py <视频> --start 0 --end 2 --step 0.05
   python tools/analyze-motion.py <视频> --region title    # title / full / bottom
 """
-import subprocess, sys, io
-from pathlib import Path
-from PIL import Image
+import io
+import subprocess
+import sys
+
 import numpy as np
+from PIL import Image
 
 src = sys.argv[1]
 def opt(n, d): return sys.argv[sys.argv.index(n) + 1] if n in sys.argv else d

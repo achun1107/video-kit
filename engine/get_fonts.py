@@ -3,7 +3,8 @@
   python get_fonts.py          缺哪个下哪个
   python get_fonts.py --check  只检查，不下载
 中文两款各 20MB 左右，所以仓库里可以不带字体，装好 skill 后跑一次这个脚本。"""
-import sys, urllib.request
+import sys
+import urllib.request
 from pathlib import Path
 
 BASE = "https://raw.githubusercontent.com/google/fonts/main/ofl/"

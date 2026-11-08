@@ -1,0 +1,55 @@
+# ruff 配置
+#   https://docs.astral.sh/ruff/
+#
+# 为什么用 ruff 而不是 flake8 + isort + black + pyupgrade 四件套：
+# 一个工具、一个配置、Rust 实现（毫秒级），CI 里不拖时间。
+#
+# ## 关于忽略的规则
+#
+# lint 的目的是**防新问题**，不是给老代码做美容。下面这些忽略都有具体理由，
+# 而且我试过一次批量修 B007/E741，把 tts.py 和 check-links.py 改出了
+# 3 个 F821（undefined name），测试从 60 passed 掉到 4 failed —— 回滚了。
+# 记录在这里免得后人重踩。
+
+target-version = "py310"
+line-length = 110
+
+[lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+ignore = [
+  "E501",   # 行长由 line-length 管，不逐行报
+  "UP009",  # `# -*- coding: utf-8 -*-` 在 py3 是冗余，但显式声明无害，不强制删
+  "SIM115", # open() 不用 with —— 这些脚本跑完就退出，进程退出自动释放句柄。
+            # 改成 with 要重排作用域，有改坏的风险，收益为零。
+  "E741",   # 单字母变量 l —— 改成 line 时批量正则漏了部分引用点，导致 F821。
+            # 逐个手改成本高于收益，而 l 在短循环里其实好读。
+  "B007",   # 未用的循环变量 —— 同上，批量改成 _ 会漏改循环体内的引用。
+  "E402",   # 模块级 import 不在顶部 —— shot-github.py 需要在 sys.path 调整后 import。
+]
+
+[lint.per-file-ignores]
+# ── engine/ 是从 vibe-knowledge-film 继承的渲染核心 ──
+# 它跑得好好的，风格和 tools/ 不同（紧凑写法、分号连写、模块级副作用）。
+# 动它有改坏渲染的风险，而渲染的对错由 `--det` 和视觉回归管，不由 lint 管。
+"engine/*" = [
+  "E701", "E702", "E401",   # 紧凑写法
+  "SIM105",                 # try/except/pass
+]
+
+# ── 测试里允许的写法 ──
+"tests/*" = [
+  "S101",   # assert
+]
+
+# ── 生成图片的脚本里全是坐标常量 ──
+"tools/make-readme-image.py" = ["SIM108"]
+"tools/make-social-preview.py" = ["SIM108"]
+"tools/make-demo-frames.py" = ["SIM108"]
+
+[lint.isort]
+known-first-party = ["asrfix"]
+
+[format]
+quote-style = "preserve"
+indent-style = "space"

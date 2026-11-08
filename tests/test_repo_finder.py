@@ -5,8 +5,8 @@
   · parse_cn_number —— 中文数字解析（"一点八万" = 18000，"3.6万" = 36000）
   · find_star_hint —— 只认跟着 star/星 的数字，不能把"67.5万张命盘"当成 star 数
 """
-import sys
 import importlib.util
+import sys
 from pathlib import Path
 
 TOOLS = Path(__file__).resolve().parent.parent / 'tools'

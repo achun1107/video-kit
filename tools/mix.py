@@ -14,7 +14,8 @@
 音效：<工程>/audio/score.wav（engine/audio.py 生成）。
 配乐：任意 mp3/wav，循环铺满全片，首尾各做 0.4s / 1.5s 淡入淡出。
 """
-import subprocess, sys
+import subprocess
+import sys
 from pathlib import Path
 
 

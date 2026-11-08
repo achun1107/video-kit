@@ -11,9 +11,9 @@
 
 只打印「文件:行号 + 命中类型」，绝不打印密钥值。
 """
+import re
 import subprocess
 import sys
-import re
 
 PATTERNS = {
     'GitHub PAT': r'ghp_[A-Za-z0-9]{30,}',

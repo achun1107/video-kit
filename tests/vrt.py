@@ -25,12 +25,10 @@ macOS 用 CoreText），同一份代码渲出来像素必有差异。
 把两张图缩到 360×640 后逐像素求差的均值（0-255 区间归一化到 0-1）。
 默认阈值 0.02（2%），差不多等于"看得出来的改动"。
 """
-import os
-import sys
 import json
 import shutil
 import subprocess
-import tempfile
+import sys
 from pathlib import Path
 
 from PIL import Image, ImageChops

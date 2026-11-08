@@ -7,7 +7,14 @@
 用的是 GitHub CLI 的公开 client_id（设备码流程本身不需要 client_secret）。
 token 拿到后存进 ~/.dsh/github-token（600 权限），并在推送后把它设成 git 的 remote 凭据。
 """
-import sys, json, time, urllib.request, urllib.parse, urllib.error, subprocess
+import contextlib
+import json
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
 CLIENT_ID = '178c6fc778ccc68e1d6a'      # GitHub CLI 的公开 client_id
@@ -103,10 +110,8 @@ def main():
 
         TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
         TOKEN_FILE.write_text(token, encoding='utf-8')
-        try:
+        with contextlib.suppress(Exception):
             TOKEN_FILE.chmod(0o600)
-        except Exception:
-            pass
         print(f'✓ 已授权，token 存到 {TOKEN_FILE}')
 
     st, me = api('/user', token)

@@ -23,5 +23,8 @@ scipy>=1.11
 # Images (README figures, frame tiling)
 pillow>=10.0
 
+# Lint
+ruff>=0.6
+
 # Tests
 pytest>=7.4

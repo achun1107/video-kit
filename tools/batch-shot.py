@@ -8,8 +8,11 @@
   <dir>/page_00.png ...   每页一张
   <dir>/index.json        文件名 / 尺寸 / 标题
 """
-import sys, json
+import contextlib
+import json
+import sys
 from pathlib import Path
+
 from playwright.sync_api import sync_playwright
 
 base = sys.argv[1].rstrip('/')
@@ -61,10 +64,8 @@ with sync_playwright() as p:
             pg.goto(url, wait_until='domcontentloaded', timeout=45000)
             pg.wait_for_timeout(1800)
             for sel in ('button:has-text("Accept")', '[aria-label="Close"]'):
-                try:
+                with contextlib.suppress(Exception):
                     pg.locator(sel).first.click(timeout=800)
-                except Exception:
-                    pass
             fn = f'page_{i:02d}.png'
             pg.screenshot(path=str(out / fn))
             meta.append({'file': fn, 'path': path, 'title': pg.title(),

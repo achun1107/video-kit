@@ -18,7 +18,9 @@
   参考稿   —— 读原视频转写，借用它的结构和节奏，把主语换成目标项目。
              有原片时质量明显更高，因为借的是别人验证过的讲法。
 """
-import sys, json, re
+import json
+import re
+import sys
 from pathlib import Path
 
 

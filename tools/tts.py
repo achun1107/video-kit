@@ -18,7 +18,10 @@
   audio/subs.json     ← 合并后的字幕表，film 直接读
   audio/timeline.json ← 段落起止时间，供 film/mix 用
 """
-import sys, json, subprocess, re, io, os
+import json
+import re
+import subprocess
+import sys
 from pathlib import Path
 
 
@@ -37,7 +40,7 @@ def srt_time(s):
 
 
 def parse_srt(path):
-    txt = io.open(path, encoding='utf-8').read().strip()
+    txt = open(path, encoding='utf-8').read().strip()
     out = []
     for block in txt.split('\n\n'):
         lines = [l for l in block.split('\n') if l.strip()]
@@ -69,7 +72,7 @@ def main():
     if not copy_path.exists():
         sys.exit(f'没有 {copy_path}，先写文案')
 
-    copy = json.loads(io.open(copy_path, encoding='utf-8').read())
+    copy = json.loads(open(copy_path, encoding='utf-8').read())
     voice = opt(a, '--voice', copy.get('voice', 'zh-CN-YunxiNeural'))
     rate = str(opt(a, '--rate', copy.get('rate', '+45%')))
     pitch = str(opt(a, '--pitch', copy.get('pitch', '+5Hz')))
@@ -108,12 +111,12 @@ def main():
                 subs.append({'a': round(a1 + at, 2), 'b': round(b1 + at, 2), 'zh': txt.strip()})
 
     subs.sort(key=lambda x: x['a'])
-    io.open(audio / 'subs.json', 'w', encoding='utf-8').write(json.dumps(subs, ensure_ascii=False, indent=2))
-    io.open(audio / 'subs.js', 'w', encoding='utf-8').write('window.SUBS = ' + json.dumps(subs, ensure_ascii=False, indent=2) + ';\n')
+    open(audio / 'subs.json', 'w', encoding='utf-8').write(json.dumps(subs, ensure_ascii=False, indent=2))
+    open(audio / 'subs.js', 'w', encoding='utf-8').write('window.SUBS = ' + json.dumps(subs, ensure_ascii=False, indent=2) + ';\n')
 
     total_end = max((s['end'] for s in timeline['segments']), default=0)
     timeline['content_end'] = round(total_end, 3)
-    io.open(audio / 'timeline.json', 'w', encoding='utf-8').write(json.dumps(timeline, ensure_ascii=False, indent=2))
+    open(audio / 'timeline.json', 'w', encoding='utf-8').write(json.dumps(timeline, ensure_ascii=False, indent=2))
 
     print()
     print(f'字幕 {len(subs)} 条 → audio/subs.json / subs.js')

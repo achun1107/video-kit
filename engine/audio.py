@@ -11,10 +11,13 @@
 事件名：tick / soft / chord / bloom / rise / thud / tock / stamp / shimmer / hush（参数 dur，秒）
 META（film.js 的 meta）：{ root: 半音偏移, noise: [[起,止,强度0..1],...], silence: [[起,止],...], drone: 0..1 }
 """
-import json, subprocess, sys
+import json
+import subprocess
+import sys
 from pathlib import Path
+
 import numpy as np
-from scipy.signal import fftconvolve, lfilter, butter
+from scipy.signal import butter, fftconvolve, lfilter
 
 SR = 48000
 D3 = 146.83

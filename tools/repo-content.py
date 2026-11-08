@@ -7,7 +7,12 @@ clone 大仓库经常 180 秒超时，这个脚本走 API 拿元信息和 README
   python tools/repo-content.py <owner/repo 或 URL> -o content.json
   python tools/repo-content.py heygen-com/hyperframes -o content.json --token ghp_xxx
 """
-import sys, re, json, base64, urllib.request, urllib.error
+import base64
+import json
+import re
+import sys
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 
@@ -117,7 +122,7 @@ def main():
     if feats:
         print(f'  特性 {len(feats)} 条: ' + ' / '.join(feats[:6]))
     if data['topics']:
-        print(f'  标签: ' + ', '.join(data['topics']))
+        print('  标签: ' + ', '.join(data['topics']))
 
 
 if __name__ == '__main__':

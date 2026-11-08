@@ -4,7 +4,11 @@
   python tools/douyin-resolve.py "https://v.douyin.com/wiU9DwCCETk/"
   python tools/douyin-resolve.py <url> --json out.json --max 20
 """
-import sys, json, re, urllib.request
+import json
+import re
+import sys
+import urllib.request
+
 from playwright.sync_api import sync_playwright
 
 UA_MOBILE = ('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) '
@@ -85,7 +89,7 @@ def collect(url, max_n=20, headless=False):
         pg.wait_for_timeout(6000)
 
         # 滚动触发懒加载
-        for i in range(6):
+        for _ in range(6):
             harvest(pg, ids)
             pg.mouse.wheel(0, 1600)
             pg.wait_for_timeout(1800)

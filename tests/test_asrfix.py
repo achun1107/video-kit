@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'tools'))
 
-from asrfix import fix_text, clean_keywords
+from asrfix import clean_keywords, fix_text
 
 
 class TestFixText:

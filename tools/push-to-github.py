@@ -10,8 +10,13 @@
 
 token 只在内存里用，不写进 .git/config、不进 shell 历史。
 """
-import sys, json, base64, subprocess, urllib.request, urllib.error
+import json
+import subprocess
+import sys
+import urllib.error
+import urllib.request
 from pathlib import Path
+
 
 def arg(name, default=None):
     return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else default
@@ -50,7 +55,7 @@ login = me.get('login')
 print(f'✓ 已登录：{login}  (token scope: {me.get("type", "")})')
 
 # 2. 建仓库
-st, info = call('/repos/{}/{}'.format(login, repo_name))
+st, info = call(f'/repos/{login}/{repo_name}')
 if st == 200:
     print(f'  仓库已存在：{info["html_url"]}')
     repo_url = info['clone_url']

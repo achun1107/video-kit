@@ -39,6 +39,11 @@ jobs:
           pip install --quiet pyflakes
           python -m pyflakes tools/*.py engine/*.py || true
 
+      - name: Python 静态检查（ruff）
+        run: |
+          pip install --quiet ruff
+          python -m ruff check .
+
       - name: 单元测试
         run: |
           pip install --quiet pytest

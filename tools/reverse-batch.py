@@ -12,7 +12,10 @@
   2. 已知工具名映射（含转写误听变体）
   3. 文本里的 owner/repo 形态 + 标题里的 GitHub 关键词
 """
-import sys, json, re, subprocess
+import json
+import re
+import subprocess
+import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent

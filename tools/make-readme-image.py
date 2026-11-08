@@ -6,7 +6,9 @@
   中：九步 2×5 网格
   下：输出横条
 """
+import contextlib
 import os
+
 from PIL import Image, ImageDraw, ImageFont
 
 W, H = 1440, 820
@@ -25,10 +27,8 @@ def font(size, bold=False):
     p = os.path.join(FONT_DIR, 'NotoSansSC-VF.ttf')
     if os.path.exists(p):
         f = ImageFont.truetype(p, size)
-        try:
+        with contextlib.suppress(Exception):
             f.set_variation_by_axes([700 if bold else 400])
-        except Exception:
-            pass
         return f
     return ImageFont.load_default()
 

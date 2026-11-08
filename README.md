@@ -37,20 +37,61 @@ node tools/make-video.mjs --douyin "https://v.douyin.com/xxxxxx/" --out ./my-vid
 
 ---
 
-## 快速开始
+## 安装
+
+### 依赖
+
+| 依赖 | 版本 | 说明 |
+|---|---|---|
+| **Node.js** | ≥ 18 | 跑 `tools/*.mjs`，零运行时依赖 |
+| **Python** | ≥ 3.10 | 渲染、配音、混音、抖音链路 |
+| **ffmpeg** | 任意近期版本 | 合成视频；`ffprobe` 要一起装 |
+
+ffmpeg 装法：
 
 ```bash
+# Windows
+winget install ffmpeg
+# macOS
+brew install ffmpeg
+# Ubuntu / Debian
+sudo apt install ffmpeg
+```
+
+装完新开终端，`ffmpeg -version` 能出东西就行。
+
+### 安装步骤
+
+```bash
+# 1. 克隆
 git clone https://github.com/achun1107/video-kit
 cd video-kit
 
-python engine/get_fonts.py                    # 14 个开源字体，43MB，只下一次
-pip install -r requirements.txt
-python -m playwright install chrome
+# 2. 字体（14 个开源字体，43MB，只下一次）
+python engine/get_fonts.py
 
-node tools/make-video.mjs --repo <仓库地址> --out ./out
+# 3. Python 依赖
+pip install -r requirements.txt
+
+# 4. 浏览器（Playwright 用来截帧）
+python -m playwright install chrome
 ```
 
-需要 **Node ≥ 18**、**Python 3.10+**，`ffmpeg` 在 PATH 里。
+字体下载走 `raw.githubusercontent.com`，国内可能连不上。连不上就手动下——
+脚本会打印每个失败文件对应的 URL，浏览器打开另存到 `engine/fonts/` 即可。
+
+### 验证安装
+
+```bash
+npm test          # 60 个测试，全过说明环境没问题
+npm run check     # Node 脚本语法
+```
+
+### 出片
+
+```bash
+node tools/make-video.mjs --repo <仓库地址> --out ./out
+```
 
 出片在 `out/renders/final.mp4`，播放页在 `out/renders/player.html`。
 
@@ -65,12 +106,87 @@ npm run selfcheck     # 语法 + 测试 + 死链 + 历史密钥，一条命令
 ```bash
 npm test              # 60 个测试：误听纠正、数字解析、SRT 解析、仓库卫生
 npm run check         # Node 脚本语法
+npm run lint          # Python ruff 静态检查
 npm run links         # 文档外链体检（8 个可达，0 死链）
 npm run history       # git 历史里的明文密钥（0 命中）
 npm run audit         # Python 依赖漏洞（需先 pip install pip-audit）
+npm run vrt           # 视觉回归：渲染 9 帧比对基准
 npm run fonts         # 下载 14 个字体
 ```
 
+
+---
+
+## 常见问题（FAQ）
+
+### 渲染卡住不动，最后报 `Timeout 180000ms exceeded`
+
+**九成是缺字体。** 缺了 `document.fonts.ready` 永远等不到，渲染就一直挂着。
+
+```bash
+python engine/get_fonts.py
+```
+
+也可能是内存不够（要 ≥2.5 GB 可用）。开着几十个浏览器标签时常见，
+`python tests/vrt.py` 会先预检内存并直接说明。
+
+### `--det` 报 `NOT deterministic`
+
+画面有非确定性来源，三个经典原因：
+
+1. 用了 `ctx.shadow*` — `shadowBlur` 在多图合成时结果不稳，改用深色填充模拟
+2. 单帧 `drawImage` 超过 3 次带变换 — 先烤到离屏 canvas
+3. 用了 `Math.random()` / `Date.now()` — 换成 `hash(i)`
+
+报错会带坐标 `[t, x, y, w, h]`，按坐标找是哪张卡。
+
+### 卡片里是灰色占位条，没有内容
+
+`index.html` 缺 `content.js` 或 `window.VK_SIZE`：
+
+```bash
+grep -c 'content.js' index.html    # 应该是 1
+grep -c 'VK_SIZE' index.html       # 应该是 1
+```
+
+缺了就 `node tools/make-video.mjs ... --reset-html` 重新生成。
+
+### 画幅变成横屏了
+
+同上，缺 `window.VK_SIZE = { w: 1080, h: 1920 }`，默认会退回 1920×1080。
+
+### 文字重叠 / 章节号看不见
+
+两个经典翻车：
+
+- **同色系文字压同色系背景** — 章节号用了分类色，背景也是分类色，改用 `C.ink`
+- **文字密集的卡片里又贴了文字密集的截图** — 两者打架，截图要么单独一卡要么不放
+
+### 大仓库 clone 超时
+
+180 秒上限。两个办法：用 `tools/repo-content.py` 走 GitHub API（不 clone），
+或者手工把仓库放到 `_repos/<name>/`。
+
+### 文案出来是通用套话
+
+对，模板稿就这样。**文案是唯一必须人写的部分**：
+
+```bash
+vim audio/copy.json
+python tools/tts.py <工程>
+```
+
+### 抖音下载失败 / 抓不到列表
+
+- `Fresh cookies are needed` → 脚本已绕过（提取 mp4 直链），如果还失败通常是页面结构变了
+- 抓 0 条 → 抖音要登录，或页面改版
+
+### 识别出的仓库不对
+
+口播没念仓库名，只能猜。看 `found.json` 里的 `candidates` 手工确认，
+或者 `--repo <owner/repo>` 直接指定。
+
+**完整版见 [docs/FAQ.md](docs/FAQ.md)**（还包含 Edge 浏览器、并发渲染、替换配乐等问题）。
 
 ---
 

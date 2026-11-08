@@ -8,8 +8,10 @@
 比例说明：视频卡片区宽 780。截 1280 宽 @2x = 2560 像素，
 缩到 780 时有 3.3 倍余量 —— 局部放大后依然清晰。
 """
+import contextlib
 import sys
 from pathlib import Path
+
 from playwright.sync_api import sync_playwright
 
 url = sys.argv[1]
@@ -31,18 +33,14 @@ with sync_playwright() as p:
     pg.goto(url, wait_until="domcontentloaded", timeout=60000)
     pg.wait_for_timeout(2800)
     for sel in ('button:has-text("Accept")', 'button:has-text("接受")', '[aria-label="Close"]'):
-        try:
+        with contextlib.suppress(Exception):
             pg.locator(sel).first.click(timeout=1200)
-        except Exception:
-            pass
     pg.wait_for_timeout(600)
 
     if mode == "head":
         bb = None
-        try:
+        with contextlib.suppress(Exception):
             bb = pg.locator('#repository-container-header').first.bounding_box()
-        except Exception:
-            pass
         clip = {"x": bb["x"], "y": bb["y"], "width": min(bb["width"], vw),
                 "height": min(bb["height"] + 40, vh)} if bb else \
                {"x": 0, "y": 0, "width": vw, "height": 420}
@@ -76,6 +74,7 @@ with sync_playwright() as p:
     b.close()
 
 from PIL import Image
+
 im = Image.open(out)
 W, H = im.size
 sx = im.size[0] / vw     # 截图相对 CSS 视口的缩放（device_scale_factor）
@@ -87,6 +86,7 @@ def rel(pt):
     return (round(pt[0] * sx / W, 4), round(pt[1] * sy / H, 4))
 
 import json
+
 meta = {
     "size": [W, H],
     "ratio": round(W / H, 4),

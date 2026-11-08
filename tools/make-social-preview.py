@@ -8,7 +8,9 @@
   · 元素要少，超过 4 个就糊成一团
   · 对比要强，深底白字
 """
+import contextlib
 import os
+
 from PIL import Image, ImageDraw, ImageFont
 
 W, H = 1280, 640
@@ -26,10 +28,8 @@ def font(size, bold=False):
     p = os.path.join(FONT_DIR, 'NotoSansSC-VF.ttf')
     if os.path.exists(p):
         f = ImageFont.truetype(p, size)
-        try:
+        with contextlib.suppress(Exception):
             f.set_variation_by_axes([700 if bold else 400])
-        except Exception:
-            pass
         return f
     return ImageFont.load_default()
 

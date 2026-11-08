@@ -11,10 +11,12 @@
     "history": "python tools/scan-history.py",
     "audit": "python -m pip_audit -r requirements.txt",
     "fonts": "python engine/get_fonts.py",
-    "selfcheck": "npm run check && npm test && npm run links && npm run history",
+    "selfcheck": "npm run check && npm run lint && npm test && npm run links && npm run history",
     "demo": "node tools/make-video.mjs --repo https://github.com/achun1107/video-kit --out ./out",
     "vrt": "python tests/vrt.py",
-    "vrt:update": "python tests/vrt.py --update"
+    "vrt:update": "python tests/vrt.py --update",
+    "lint": "python -m ruff check .",
+    "lint:fix": "python -m ruff check . --fix"
   },
   "engines": {
     "node": ">=18"

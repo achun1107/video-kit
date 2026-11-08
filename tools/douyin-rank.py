@@ -10,7 +10,11 @@
 输出按点赞数降序，每条含：
   id / title / digg / comment / share / duration_ms / url
 """
-import sys, json, re, urllib.request, time
+import contextlib
+import json
+import sys
+import urllib.request
+
 from playwright.sync_api import sync_playwright
 
 
@@ -101,15 +105,12 @@ def main():
 
         pg.on('response', on_resp)
 
-        try:
+        with contextlib.suppress(Exception):
             pg.goto(url, wait_until='domcontentloaded', timeout=60000)
-        except Exception:
-            pass
         pg.wait_for_timeout(6000)
 
         # 滚动加载更多
         for i in range(10):
-            before = len(awemes)
             pg.mouse.wheel(0, 1800)
             pg.wait_for_timeout(2200)
             ids = {(a.get('aweme_id') or '') for a in awemes}
