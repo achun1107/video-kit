@@ -1,0 +1,286 @@
+/* 风格 B：手账批注（参考 ganhuoju / 开源工具干货局）
+ *
+ * 特征：截图整体压暗（半透明黑遮罩）+ 超大黄色手写感文字压在脸上。
+ * 和 ajin 的区别：ajin 的截图是原色、字是配角；ganhuoju 的字是主角，截图只是背景板。
+ *
+ * 节奏：句子一句一句压上来，每句停留 3-4 秒，像在别人截图上做批注。
+ */
+const { W, H, clamp, seg, ss, hash, lerp, E } = VK;
+
+const CT = window.CONTENT || {};
+const NAME = CT.namePlain || CT.name || '这个项目';
+const HEAD = (CT.headline || '').trim();
+const STATS = CT.stats || {};
+const FEATURES = CT.features || [];
+const REPO = CT.repo || '';
+
+const DUR = 34.8;
+
+const BG = '#050505';
+const YELLOW = '#F5E400';
+
+const T = {
+  cover: 0.5,     // 设计封面
+  c1: 3.6, c2: 8.4, c3: 13.2, c4: 18.0, c5: 23.0, c6: 28.0,
+  outro: DUR - 2.0,
+};
+
+const SUBS = window.SUBS || [];
+
+/* 手写字体：运行时挂到 VK.FONTS 上，不改引擎。
+ * MaShanZheng（马善政楷书）是 SIL OFL，笔画有粗细变化，最接近参考视频的手写感。 */
+if (VK.FONTS) VK.FONTS.hand = ['400', '"VK Hand", "VK Sans"'];
+
+
+const pad2 = n => String(n).padStart(2, '0');
+function timecode(t) {
+  const s = Math.max(0, t), m = Math.floor(s / 60), s2 = Math.floor(s % 60),
+        ms = Math.floor((s % 1) * 1000);
+  return `${pad2(m)}:${pad2(s2)}.${String(ms).padStart(3, '0')}`;
+}
+
+/* 超大黄色手写感：四层叠（黑描边上下左右 + 黄字），模仿马克笔 */
+function scrawl(fr, text, x, y, size, a, o) {
+  o = o || {};
+  if (a <= 0.003) return;
+  const rot = o.rot == null ? -0.04 : o.rot;
+  const ctx = fr.x;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+
+  // 描边：四个方向各画一次黑字，制造粗描边
+  const off = Math.max(1.5, size * 0.022);   // 手写体笔画细，描边收窄，不然糊成一团
+  const dirs = [[-off, 0], [off, 0], [0, -off], [0, off]];
+  for (const [dx, dy] of dirs) {
+    fr.text(text, dx, dy, {
+      font: 'hand', size, color: '#000000', a: a * 0.95, align: o.align || 'c',
+    });
+  }
+  // 黄字主体
+  fr.text(text, 0, 0, {
+    font: 'hand', size, color: o.color || YELLOW, a, align: o.align || 'c',
+  });
+  ctx.restore();
+}
+
+/* 截图铺底，统一压暗 */
+function bed(fr, img, dark) {
+  if (img && img.complete && img.naturalWidth) {
+    // contain：完整显示截图（cover 会裁掉左右两边，项目名和 star 就没了）
+    const ctx = fr.x;
+    const w = W * 0.94;
+    const h = w * img.naturalHeight / img.naturalWidth;
+    const x = (W - w) / 2, y = (H - h) / 2;
+    // 先铺一层深色渐变底，把上下空出来的地方填掉
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#0D1117');
+    g.addColorStop(0.5, '#161B22');
+    g.addColorStop(1, '#0D1117');
+    ctx.save();
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+    // 再贴完整截图，加一圈细边
+    fr.rect(x - 3, y - 3, w + 6, h + 6, { fill: '#30363D', a: 0.9 });
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    ctx.drawImage(img, x, y, w, h);
+    ctx.restore();
+  } else {
+    fr.rect(0, 0, W, H, { fill: '#0E0E0E' });
+  }
+  fr.rect(0, 0, W, H, { fill: '#000000', a: dark == null ? 0.62 : dark });
+}
+
+const IMG = new Image();
+IMG.src = 'assets/repo.png';
+window.__IMAGES = [IMG];
+
+/* ---------- 0 设计封面（参考视频第一帧的思路：Logo + 项目名 + 三个标签）---------- */
+function cover(fr, lt) {
+  const k = ss(lt, 0, 1.0);
+  if (k <= 0) return;
+
+  fr.rect(0, 0, W, H, { fill: '#0A1015', a: 1 });
+
+  // 顶部：项目名（白，粗）
+  fr.text(NAME, W / 2, 300, {
+    font: 'sans', size: 96, color: '#FFFFFF', a: k, align: 'c',
+  });
+
+  // 中间：一句话（灰）
+  if (HEAD) {
+    fr.text(HEAD.slice(0, 14), W / 2, 400, {
+      font: 'sans', size: 44, color: '#8FA3B0', a: ss(lt, 0.3, 1.0), align: 'c',
+    });
+  }
+
+  // 中部大图区：放截图（圆角）
+  const a2 = ss(lt, 0.4, 1.4);
+  if (a2 > 0.003 && IMG.complete && IMG.naturalWidth) {
+    const w = 760, h = w * IMG.naturalHeight / IMG.naturalWidth;
+    const x = (W - w) / 2, y = 500;
+    const ctx = fr.x;
+    ctx.save();
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, y, w, h, 20); else ctx.rect(x, y, w, h);
+    ctx.clip();
+    ctx.globalAlpha = a2;
+    ctx.drawImage(IMG, x, y, w, h);
+    ctx.restore();
+  }
+
+  // 三个标签（蓝色圆角块，参考视频里是"智能识别/结构自适应/精准提取"）
+  const tags = FEATURES.slice(0, 3).map(f =>
+    String((typeof f === 'string') ? f : (f.title || f.name || '')).slice(0, 6));
+  const use = tags.length ? tags : ['智能识别', '结构自适应', '精准提取'];
+  use.forEach((t, i) => {
+    const a = ss(lt, 0.9 + i * 0.2, 0.9 + i * 0.2 + 0.6);
+    const y = 1180 + i * 96;
+    fr.rect(W / 2 - 140, y - 36, 280, 72, {
+      r: 14, fill: '#1B73E8', a: a * 0.22,
+    });
+    fr.rect(W / 2 - 140, y - 36, 280, 72, {
+      r: 14, color: '#4A9EFF', w: 2, a: a * 0.8,
+    });
+    fr.text(t, W / 2, y, {
+      font: 'sans', size: 32, color: '#8CC4FF', a, align: 'c',
+    });
+  });
+
+  // 底部一句话
+  fr.text('页面怎么变，内容都能抓', W / 2, 1520, {
+    font: 'sans', size: 30, color: '#5A6A78', a: ss(lt, 1.6, 2.4), align: 'c',
+  });
+}
+
+/* ---------- 1 大字点名 ---------- */
+function card1(fr, lt) {
+  bed(fr, IMG, 0.66);
+  scrawl(fr, NAME, W / 2, 760, 150, ss(lt, 0.15, 1.2), { rot: -0.06 });
+  scrawl(fr, '来了', W / 2 + 60, 940, 96, ss(lt, 0.9, 1.9), { rot: 0.05 });
+}
+
+/* ---------- 2 star ---------- */
+function card2(fr, lt) {
+  bed(fr, IMG, 0.6);
+  const star = STATS.star;
+  if (star) {
+    const k = ss(lt, 0.2, 1.6);
+    const shown = Math.round(star * E.out3(k));
+    scrawl(fr, `狂揽 ${shown.toLocaleString('en-US')} star`,
+           W / 2, 760, 92, Math.min(1, k * 1.6), { rot: -0.035 });
+  } else {
+    scrawl(fr, '完全开源', W / 2, 760, 120, ss(lt, 0.2, 1.4));
+  }
+}
+
+/* ---------- 3 最厉害的地方 ---------- */
+function card3(fr, lt) {
+  bed(fr, IMG, 0.64);
+  scrawl(fr, '这款工具最厉害的地方', W / 2, 720, 84, ss(lt, 0.15, 1.3), { rot: -0.03 });
+  if (HEAD) {
+    scrawl(fr, HEAD.slice(0, 12), W / 2, 900, 92, ss(lt, 1.0, 2.1), { rot: 0.04 });
+  }
+}
+
+/* ---------- 4 场景：不管怎么变 ---------- */
+function card4(fr, lt) {
+  bed(fr, IMG, 0.66);
+  scrawl(fr, '不管怎么变', W / 2, 700, 110, ss(lt, 0.15, 1.3), { rot: -0.05 });
+  scrawl(fr, '它都能自动适配', W / 2, 900, 96, ss(lt, 1.1, 2.2), { rot: 0.035 });
+}
+
+/* ---------- 5 降门槛 ---------- */
+function card5(fr, lt) {
+  bed(fr, IMG, 0.62);
+  scrawl(fr, '全程不用改代码', W / 2, 740, 100, ss(lt, 0.15, 1.3), { rot: -0.04 });
+  scrawl(fr, '新手也能上手', W / 2, 920, 88, ss(lt, 1.0, 2.0), { rot: 0.03 });
+}
+
+/* ---------- 6 结论 ---------- */
+function card6(fr, lt) {
+  bed(fr, IMG, 0.7);
+  const concl = (CT.conclusion || ['完全开源', '拿来就用', '实用性拉满']).slice(0, 3);
+  concl.forEach((t, i) => {
+    const a = ss(lt, 0.3 + i * 0.75, 0.3 + i * 0.75 + 1.0);
+    if (a <= 0.003) return;
+    scrawl(fr, String(t).slice(0, 10), W / 2, 660 + i * 180, 100, a,
+           { rot: i % 2 ? 0.03 : -0.035 });
+  });
+  if (REPO) {
+    fr.text(REPO, W / 2, 1330, {
+      font: 'mono', size: 26, color: '#777777', a: ss(lt, 2.1, 2.8),
+    });
+  }
+}
+
+function subtitles(fr, t) {
+  if (!SUBS.length) return;
+  const cand = SUBS.filter(x => t >= x.a - 0.05 && t <= x.b + 0.25);
+  const s = cand.length ? cand[cand.length - 1] : null;
+  if (!s) return;
+  const a = ss(t, s.a, s.a + 0.16) * (1 - ss(t, s.b, s.b + 0.1));
+  if (a <= 0.003) return;
+
+  const vw = Array.from(s.zh).reduce(
+    (n, ch) => n + (/[\u4e00-\u9fff]/.test(ch) ? 1 : (ch === ' ' ? 0.3 : 0.56)), 0);
+  const size = Math.min(52, Math.round(860 / (vw * 1.0)));
+
+  // 垫一条深色带，浅色截图上字幕才不糊
+  fr.rect(W / 2 - 480, 1640 - size * 0.9, 960, size * 1.8, {
+    fill: '#000000', a: a * 0.6,
+  });
+  fr.text(s.zh, W / 2, 1640, {
+    font: 'sans', size, color: '#FFFFFF', a,
+    shadow: 0.95, shadowBlur: 10,
+  });
+}
+
+const CUES = [
+  [T.cover, 'rise'], [T.c1, 'thud'], [T.c2, 'tick'], [T.c3, 'tick'],
+  [T.c4, 'tick'], [T.c5, 'tick'], [T.c6, 'chord', { root: 7 }],
+  [DUR - 1.2, 'hush'],
+];
+
+VK.film({
+  dur: DUR, fps: 30, theme: 'flat',
+  meta: { root: 0, drone: 0.4 },
+  draw(fr, t) {
+    fr.look.bgo = { color: BG };
+    fr.look.bloom = 0.04;
+    fr.look.grain = 0.05;
+
+    const segs = [
+      [0, T.c1, cover],
+      [T.c1, T.c2, card1], [T.c2, T.c3, card2], [T.c3, T.c4, card3],
+      [T.c4, T.c5, card4], [T.c5, T.c6, card5], [T.c6, DUR, card6],
+    ];
+
+    segs.forEach(sg => {
+      const a = sg[0], b = sg[1], fn = sg[2];
+      if (t < a || t >= b) return;
+      const kk = Math.min(seg(t, a, a + 0.05), 1 - seg(t, b - 0.04, b));
+      if (kk <= 0.002) return;
+      fr.g({ a: kk }, () => fn(fr, t - a));
+    });
+
+    subtitles(fr, t);
+
+    for (let i = 0; i < CUES.length; i++) {
+      const tt = CUES[i][0];
+      if (t >= tt && t < tt + 0.034) fr.sfx(tt, CUES[i][1], CUES[i][2] || {});
+    }
+
+    fr.text(timecode(t), 40, H - 34, {
+      font: 'mono', size: 16, color: '#3A3A3A',
+      a: ss(t, 0.5, 1.2) * 0.8, align: 'l',
+    });
+
+    const ko = ss(t, T.outro, DUR);
+    if (ko > 0) fr.flash(ko * 0.05, '#000000');
+  },
+});
