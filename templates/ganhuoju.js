@@ -98,11 +98,14 @@ function scrawl(fr, text, x, y, size, a, o) {
 }
 
 /* 截图铺底，统一压暗 */
-function bed(fr, img, dark) {
+function bed(fr, img, dark, z) {
+  // z: 缩放系数（Ken Burns）。传 1.0~1.06 让静止截图一直在缓慢放大，
+  // 不然每张卡 4.4 秒里画面完全不动，看起来像 PPT 播放。
+  const zoom = z || 1;
   if (img && img.complete && img.naturalWidth) {
     // contain：完整显示截图（cover 会裁掉左右两边，项目名和 star 就没了）
     const ctx = fr.x;
-    const w = W * 0.94;
+    const w = W * 0.94 * zoom;
     const h = w * img.naturalHeight / img.naturalWidth;
     const x = (W - w) / 2, y = (H - h) / 2;
     // 先铺一层深色渐变底，把上下空出来的地方填掉
@@ -118,7 +121,7 @@ function bed(fr, img, dark) {
     fr.rect(x - 3, y - 3, w + 6, h + 6, { fill: '#30363D', a: 0.9 });
     ctx.save();
     ctx.beginPath();
-    ctx.rect(x, y, w, h);
+    ctx.rect(0, 0, W, H);
     ctx.clip();
     ctx.drawImage(img, x, y, w, h);
     ctx.restore();
@@ -182,20 +185,21 @@ function cover(fr, lt) {
 
 /* ---------- 1 大字点名 ---------- */
 function card1(fr, lt) {
-  bed(fr, IMG, 0.66);
+  bed(fr, IMG, 0.66, 1 + 0.06 * Math.min(1, lt / 4.4));
   scrawl(fr, NAME, W / 2, 760, 150, 1, { rot: -0.06 });   // 硬切，名字第 0 帧就出
-  scrawl(fr, '来了', W / 2 + 60, 940, 96, ss(lt, 0.9, 1.9), { rot: 0.05 });
+  scrawl(fr, '来了', W / 2 + 60, 940, 96, ss(lt, 0.55, 1.4), { rot: 0.05 });   // 提前出现，别让画面空着
 }
 
 /* ---------- 2 star ---------- */
 function card2(fr, lt) {
-  bed(fr, IMG, 0.6);
+  bed(fr, IMG, 0.6, 1 + 0.06 * Math.min(1, lt / 4.4));
   const star = STATS.star;
   if (star) {
-    const k = ss(lt, 0.2, 1.6);
+    // 硬切 + 数字快滚：原来 0.2~1.6 秒淡入，切进来时几乎是空的
+    const k = ss(lt, 0, 0.7);
     const shown = Math.round(star * E.out3(k));
     scrawl(fr, `狂揽 ${shown.toLocaleString('en-US')} star`,
-           W / 2, 760, 92, Math.min(1, k * 1.6), { rot: -0.035 });
+           W / 2, 760, 92, 1, { rot: -0.035 });
   } else {
     scrawl(fr, '完全开源', W / 2, 760, 120, ss(lt, 0.2, 1.4));
   }
@@ -203,8 +207,8 @@ function card2(fr, lt) {
 
 /* ---------- 3 最厉害的地方 ---------- */
 function card3(fr, lt) {
-  bed(fr, IMG, 0.64);
-  scrawl(fr, '这款工具最厉害的地方', W / 2, 720, 84, ss(lt, 0.15, 1.3), { rot: -0.03 });
+  bed(fr, IMG, 0.64, 1 + 0.06 * Math.min(1, lt / 4.4));
+  scrawl(fr, '这款工具最厉害的地方', W / 2, 720, 84, 1, { rot: -0.03 });
   if (HEAD) {
     // 按字数分行 + 字号随行长自适应（原来 slice(0,12) 会把「搞定一切」切掉）
     const chars = Array.from(HEAD);
@@ -216,31 +220,31 @@ function card3(fr, lt) {
     rows.slice(0, 2).forEach((r, i) => {
       const size = r.length >= 10 ? 72 : (r.length >= 8 ? 82 : 92);
       scrawl(fr, r, W / 2, 880 + i * 112, size,
-             ss(lt, 1.0 + i * 0.25, 2.0 + i * 0.25), { rot: 0.04 });
+             ss(lt, 0.5 + i * 0.3, 1.4 + i * 0.3), { rot: 0.04 });
     });
   }
 }
 
 /* ---------- 4 场景：不管怎么变 ---------- */
 function card4(fr, lt) {
-  bed(fr, IMG, 0.66);
-  scrawl(fr, '不管怎么变', W / 2, 700, 110, ss(lt, 0.15, 1.3), { rot: -0.05 });
-  scrawl(fr, '它都能自动适配', W / 2, 900, 96, ss(lt, 1.1, 2.2), { rot: 0.035 });
+  bed(fr, IMG, 0.66, 1 + 0.06 * Math.min(1, lt / 4.4));
+  scrawl(fr, '不管怎么变', W / 2, 700, 110, 1, { rot: -0.05 });
+  scrawl(fr, '它都能自动适配', W / 2, 900, 96, ss(lt, 0.6, 1.6), { rot: 0.035 });
 }
 
 /* ---------- 5 降门槛 ---------- */
 function card5(fr, lt) {
-  bed(fr, IMG, 0.62);
-  scrawl(fr, '全程不用改代码', W / 2, 740, 100, ss(lt, 0.15, 1.3), { rot: -0.04 });
-  scrawl(fr, '新手也能上手', W / 2, 920, 88, ss(lt, 1.0, 2.0), { rot: 0.03 });
+  bed(fr, IMG, 0.62, 1 + 0.06 * Math.min(1, lt / 4.4));
+  scrawl(fr, '全程不用改代码', W / 2, 740, 100, 1, { rot: -0.04 });
+  scrawl(fr, '新手也能上手', W / 2, 920, 88, ss(lt, 0.55, 1.5), { rot: 0.03 });
 }
 
 /* ---------- 6 结论 ---------- */
 function card6(fr, lt) {
-  bed(fr, IMG, 0.7);
+  bed(fr, IMG, 0.7, 1 + 0.06 * Math.min(1, lt / 4.4));
   const concl = (CT.conclusion || ['完全开源', '拿来就用', '实用性拉满']).slice(0, 3);
   concl.forEach((t, i) => {
-    const a = ss(lt, 0.3 + i * 0.75, 0.3 + i * 0.75 + 1.0);
+    const a = i === 0 ? 1 : ss(lt, 0.25 + i * 0.6, 0.25 + i * 0.6 + 0.9);
     if (a <= 0.003) return;
     scrawl(fr, String(t).slice(0, 10), W / 2, 660 + i * 180, 100, a,
            { rot: i % 2 ? 0.03 : -0.035 });

@@ -128,7 +128,7 @@ function card2(fr, lt) {
   for (let i = 0; i < chars.length; i += 8) rows.push(chars.slice(i, i + 8).join(''));
 
   rows.forEach((r, i) => {
-    const a = ss(lt, 0.3 + i * 0.5, 0.3 + i * 0.5 + 1.0);
+    const a = i === 0 ? 1 : ss(lt, 0.2 + i * 0.45, 0.2 + i * 0.45 + 0.9);
     if (a <= 0.003) return;
     // 字号随行长自适应：手写体字距大，11 字 × 78px 就超 1080 了
     const fs = r.length >= 8 ? 56 : (r.length >= 6 ? 64 : 72);
@@ -149,7 +149,7 @@ function card3(fr, lt) {
   const rows = list.length ? list : ['开箱即用', '零依赖', '完全开源'];
 
   rows.forEach((t, i) => {
-    const a = ss(lt, 0.5 + i * 0.9, 0.5 + i * 0.9 + 1.1);
+    const a = i === 0 ? 1 : ss(lt, 0.35 + i * 0.75, 0.35 + i * 0.75 + 1.0);
     if (a <= 0.003) return;
     const y = 620 + i * 200;
     // 字号随字数自适应：手写体字距大，12 字 × 92px = 1104px 会超出 1080
@@ -170,10 +170,10 @@ function card4(fr, lt) {
     return;
   }
 
-  const k = ss(lt, 0.2, 1.7);
+  const k = ss(lt, 0, 0.8);   // 快滚 + 硬切，别让切进来时是空的
   const shown = Math.round(star * E.out3(k));
   fr.text(shown.toLocaleString('en-US'), W / 2, 780, {
-    font: 'sans', size: 220, color: YELLOW, a: Math.min(1, k * 2),
+    font: 'sans', size: 220, color: YELLOW, a: 1,
   });
   marker(fr, 'STAR', W / 2, 940, 66, ss(lt, 1.0, 1.7), { rot: 0 });
 }
@@ -196,7 +196,7 @@ function card6(fr, lt) {
 
   const concl = (CT.conclusion || ['完全开源', '拿来就用', '三分钟上手']).slice(0, 3);
   concl.forEach((t, i) => {
-    const a = ss(lt, 0.3 + i * 0.8, 0.3 + i * 0.8 + 1.1);
+    const a = i === 0 ? 1 : ss(lt, 0.25 + i * 0.65, 0.25 + i * 0.65 + 0.95);
     if (a <= 0.003) return;
     marker(fr, String(t).slice(0, 12), W / 2, 660 + i * 190, 96, a,
            { rot: i % 2 ? 0.025 : -0.03 });

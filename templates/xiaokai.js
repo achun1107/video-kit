@@ -158,7 +158,7 @@ function card1(fr, lt) {
 
 /* ---------- 2 截图 + 高亮 ---------- */
 function card2(fr, lt) {
-  const a = ss(lt, 0.1, 0.9);
+  const a = 1;   // 硬切，切进来时别是空的
   const w = 820, x = (W - w) / 2, y = 420;
   const h = shotCard(fr, IMG, x, y, w, 0, a);
 
@@ -171,7 +171,7 @@ function card2(fr, lt) {
 /* ---------- 3 star ---------- */
 function card3(fr, lt) {
   const star = STATS.star;
-  const a = ss(lt, 0.2, 1.4);
+  const a = 1;
   if (!star) {
     titleCard(fr, ['完全开源'], 760, a, { size: 96 });
     return;
@@ -190,7 +190,7 @@ function card4(fr, lt) {
   const rows = list.length ? list : ['智能识别', '自动适配', '零配置'];
 
   rows.forEach((t, i) => {
-    const a = ss(lt, 0.3 + i * 0.7, 0.3 + i * 0.7 + 1.0);
+    const a = i === 0 ? 1 : ss(lt, 0.25 + i * 0.6, 0.25 + i * 0.6 + 0.9);
     if (a <= 0.003) return;
     const y = 560 + i * 260;
     fr.rect(W / 2 - 400, y - 70, 800, 140, { r: 10, fill: '#FFFFFF', a: a * 0.96 });
@@ -229,7 +229,7 @@ function card5(fr, lt) {
 function card6(fr, lt) {
   const concl = (CT.conclusion || ['完全开源', '拿来就用', '很实用']).slice(0, 3);
   const lines = concl.map(t => String(t).slice(0, 8));
-  titleCard(fr, lines, 780, ss(lt, 0.2, 1.3), { size: 76, rot: -0.015 });
+  titleCard(fr, lines, 780, 1, { size: 76, rot: -0.015 });
 
   if (REPO) {
     fr.text(REPO, W / 2, 1240, {
