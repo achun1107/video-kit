@@ -125,14 +125,16 @@ function card2(fr, lt) {
   const line = HEAD || '一个值得看看的开源项目';
   const chars = Array.from(line);
   const rows = [];
-  for (let i = 0; i < chars.length; i += 12) rows.push(chars.slice(i, i + 12).join(''));
+  for (let i = 0; i < chars.length; i += 8) rows.push(chars.slice(i, i + 8).join(''));
 
   rows.forEach((r, i) => {
     const a = ss(lt, 0.3 + i * 0.5, 0.3 + i * 0.5 + 1.0);
     if (a <= 0.003) return;
+    // 字号随行长自适应：手写体字距大，11 字 × 78px 就超 1080 了
+    const fs = r.length >= 8 ? 56 : (r.length >= 6 ? 64 : 72);
     const y = 700 + i * 150;
-    highlighter(fr, W / 2, y, 860, 110, ss(lt, 0.2 + i * 0.5, 0.2 + i * 0.5 + 1.2), a);
-    marker(fr, r, W / 2, y, 78, a, { rot: i % 2 ? 0.02 : -0.025 });
+    highlighter(fr, W / 2, y, 900, fs * 1.35, ss(lt, 0.2 + i * 0.5, 0.2 + i * 0.5 + 1.2), a);
+    marker(fr, r, W / 2, y, fs, a, { rot: i % 2 ? 0.02 : -0.025 });
   });
 }
 
@@ -143,14 +145,17 @@ function card3(fr, lt) {
   fr.rect(0, 0, W, H, { fill: '#000000', a: 0.52 * k });
 
   const list = FEATURES.slice(0, 3).map(f =>
-    String((typeof f === 'string') ? f : (f.title || f.name || '')).slice(0, 12));
+    String((typeof f === 'string') ? f : (f.title || f.name || '')).slice(0, 14));
   const rows = list.length ? list : ['开箱即用', '零依赖', '完全开源'];
 
   rows.forEach((t, i) => {
     const a = ss(lt, 0.5 + i * 0.9, 0.5 + i * 0.9 + 1.1);
     if (a <= 0.003) return;
     const y = 620 + i * 200;
-    marker(fr, t, W / 2, y, 92, a, { rot: i % 2 ? 0.03 : -0.04 });
+    // 字号随字数自适应：手写体字距大，12 字 × 92px = 1104px 会超出 1080
+    const n = Array.from(t).length;
+    const fs = n <= 8 ? 82 : (n <= 10 ? 70 : (n <= 12 ? 60 : 52));
+    marker(fr, t, W / 2, y, fs, a, { rot: i % 2 ? 0.03 : -0.04 });
   });
 }
 

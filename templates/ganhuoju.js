@@ -227,7 +227,18 @@ function card3(fr, lt) {
   bed(fr, IMG, 0.64);
   scrawl(fr, '这款工具最厉害的地方', W / 2, 720, 84, ss(lt, 0.15, 1.3), { rot: -0.03 });
   if (HEAD) {
-    scrawl(fr, HEAD.slice(0, 12), W / 2, 900, 92, ss(lt, 1.0, 2.1), { rot: 0.04 });
+    // 按字数分行 + 字号随行长自适应（原来 slice(0,12) 会把「搞定一切」切掉）
+    const chars = Array.from(HEAD);
+    const per = Math.min(11, Math.ceil(chars.length / 2));
+    const rows = [];
+    for (let i = 0; i < chars.length; i += per) {
+      rows.push(chars.slice(i, i + per).join(''));
+    }
+    rows.slice(0, 2).forEach((r, i) => {
+      const size = r.length >= 10 ? 72 : (r.length >= 8 ? 82 : 92);
+      scrawl(fr, r, W / 2, 880 + i * 112, size,
+             ss(lt, 1.0 + i * 0.25, 2.0 + i * 0.25), { rot: 0.04 });
+    });
   }
 }
 
