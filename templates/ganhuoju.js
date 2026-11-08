@@ -341,6 +341,66 @@ function outroBar(fr, a, o) {
   });
 }
 
+
+/* 鼠标光标：白色箭头 + 点击涟漪。
+ *
+ * 参考视频里都有这个 —— 观众看到光标动，才知道"这是真在操作"，
+ * 不是"PPT 放了一张图"。
+ *
+ * 路径用固定的控制点，t 的纯函数，--det 能过。
+ */
+function cursor(fr, t, t0, dur, x0, y0, x1, y1, clickAt) {
+  if (t < t0 || t > t0 + dur + 0.6) return;
+
+  const k = Math.min(1, Math.max(0, (t - t0) / dur));
+  const e = E.io3(k);
+  // 带一点弧线：控制点在两点中间上方
+  const cx = (x0 + x1) / 2 + (y1 - y0) * 0.18;
+  const cy = (y0 + y1) / 2 - Math.abs(x1 - x0) * 0.12;
+  // 二次贝塞尔
+  const x = (1 - e) * (1 - e) * x0 + 2 * (1 - e) * e * cx + e * e * x1;
+  const y = (1 - e) * (1 - e) * y0 + 2 * (1 - e) * e * cy + e * e * y1;
+
+  const ctx = fr.x;
+  const a = t < t0 + 0.12 ? (t - t0) / 0.12 : 1;
+
+  // 点击涟漪
+  if (clickAt != null && t >= t0 + clickAt) {
+    const ck = Math.min(1, (t - t0 - clickAt) / 0.45);
+    if (ck < 1) {
+      const r = 14 + 46 * ck;
+      ctx.save();
+      ctx.strokeStyle = `rgba(255,229,0,${0.75 * (1 - ck)})`;
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // 光标本体：白色箭头 + 黑描边
+  ctx.save();
+  ctx.globalAlpha = a * 0.96;
+  ctx.translate(x, y);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(0, 30);
+  ctx.lineTo(8, 23);
+  ctx.lineTo(13, 34);
+  ctx.lineTo(18, 31);
+  ctx.lineTo(13, 21);
+  ctx.lineTo(23, 21);
+  ctx.closePath();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fill();
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 2.2;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  ctx.restore();
+}
+
 VK.film({
   dur: DUR, fps: 30, theme: 'flat',
   meta: { root: 0, drone: 0.4 },
@@ -356,6 +416,17 @@ VK.film({
     ];
 
     segs.forEach(sg => cut(fr, t, sg[0], sg[1], sg[2]));
+
+    /* 鼠标光标：让静态截图有"被操作"的感觉。
+     * 参考视频里都有 —— 观众看到光标动，才知道这是真在演示，
+     * 不是 PPT 放了一张图。
+     *
+     * 三个动作：
+     *   1. 封面卡：从右下角移到 Star 数那里，点一下
+     *   2. 第三张卡：移到截图中间偏上
+     */
+    cursor(fr, t, 0.8, 1.2, W * 0.86, H * 0.60, W * 0.865, H * 0.402, 0.85);
+    cursor(fr, t, 14.0, 1.4, W * 0.20, H * 0.70, W * 0.62, H * 0.40, 1.0);
 
     subtitles(fr, t);
 
