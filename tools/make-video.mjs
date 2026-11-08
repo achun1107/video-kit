@@ -37,6 +37,7 @@ const repoArg = arg('--repo');
 const douyinInput = arg('--douyin');
 let douyinAsr = null;   // 抖音流程的转写结果，用来生成参考稿
 const videoArg = arg('--video');   // 任意站点视频链接，或本地文件
+const templateArg = arg('--template', 'tech');   // 影片风格：tech / minimal
 if (!repoArg && !douyinInput && !videoArg) {
   console.error('用法:');
   console.error('  node tools/make-video.mjs --repo <github url|本地目录> --out <工程目录>');
@@ -338,6 +339,26 @@ if (!existsSync(join(out, 'content.json'))) {
     stats: {}, features: [], chapters: [],
   }, null, 2), 'utf8');
 }
+/* API 兜底：本地 clone 失败（大仓库超时）时，extract-content.mjs 只能给占位，
+ * 影片里会念「这个项目」。这里检查内容是否真的抽到了，没有就走 API 补。
+ * 判据：headline 是占位文案，或 features/chapters 都空。 */
+let _c = null;
+try { _c = JSON.parse(readFileSync(join(out, 'content.json'), 'utf8')); } catch { }
+const _placeholder = !_c || !_c.headline ||
+  _c.headline === '一个值得看的开源项目' ||
+  ((!(_c.features || []).length) && (!(_c.chapters || []).length) && !_c.stats?.star);
+
+if (_placeholder && repoArgFinal && /^[\w.-]+\/[\w.-]+$/.test(repoArgFinal)) {
+  console.log('  本地抽取为空，改走 GitHub API …');
+  try {
+    run(PY, [join(KIT, 'tools', 'repo-content.py'), repoArgFinal,
+             '-o', join(out, 'content.json'),
+             ...(process.env.GITHUB_TOKEN ? ['--token', process.env.GITHUB_TOKEN] : [])]);
+  } catch {
+    console.warn('  API 也失败了，保留占位内容');
+  }
+}
+
 const content = JSON.parse(readFileSync(join(out, 'content.json'), 'utf8'));
 writeFileSync(join(out, 'content.js'), 'window.CONTENT = ' + JSON.stringify(content, null, 2) + ';\n', 'utf8');
 console.log(`  ${content.namePlain || content.name} / ${content.headline || ''}`);
@@ -389,9 +410,15 @@ try {
 
 /* ══ 6. 铺影片 ══ */
 step(5, '铺影片模板');
+const tplSrc = join(KIT, 'templates', templateArg + '.js');
+if (!existsSync(tplSrc)) {
+  const avail = readdirSync(join(KIT, 'templates'))
+    .filter(f => f.endsWith('.js')).map(f => f.replace('.js', ''));
+  process.exit(`× 没有模板 "${templateArg}"。可选：${avail.join(' / ')}`);
+}
 if (!existsSync(join(out, 'film.js')) || has('--reset-film')) {
-  copyFileSync(join(out, 'tools', 'film-template.js'), join(out, 'film.js'));
-  console.log('  film.js ← tools/film-template.js');
+  copyFileSync(tplSrc, join(out, 'film.js'));
+  console.log(`  film.js ← templates/${templateArg}.js`);
 } else {
   console.log('  film.js 已存在，保留（--reset-film 覆盖）');
 }

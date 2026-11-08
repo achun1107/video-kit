@@ -1,0 +1,43 @@
+feat: 多套影片风格（--template tech / minimal）
+
+原来只有一套七卡模板写死在 tools/film-template.js 里。现在拆成可替换的模板：
+
+  templates/tech.js      科技卡片风（默认）：深底 + 白卡 + 橙色强调，信息密度高
+  templates/minimal.js   极简文字风：纯黑底、无卡片、大字居中、一句一行
+
+用法：
+
+  node tools/make-video.mjs --repo owner/name --template minimal --out ./out
+
+模板接口完全一致：读 window.CONTENT / window.SUBS，调 VK.film，
+所以换风格只改 film.js 文件，content.json 和 copy.json 不动。
+
+## 两套的实际差别
+
+                 tech                      minimal
+背景             深炭黑 #0B0D11             纯黑 #000000
+卡片             白卡 + 描边                 没有卡片
+标题             100px 带光晕                150px 纯白
+动画             整体淡入上浮                逐字打出
+强调             橙 + 青 + 金三色            只有一个强调色
+节奏             七卡各 2-6 秒               每段停留更久
+字幕             投影                        细描边
+
+## 顺带修的两个真问题
+
+1. content 抽取的兜底
+   本地 clone 失败时（大仓库超时），extract-content.mjs 只能给占位
+   （namePlain = "这个项目"），影片里就念「这个项目」。
+   现在检查内容是否真的抽到了，没有就走 GitHub API 补。
+
+2. 中英文断行规则不同
+   minimal 模板第一版按字符数平分，英文 headline 被切成
+   「Render v / ideo」。现在英文按空格断词，中文才按字符平分，
+   而且英文用更小字号（同 size 下英文字宽是中文的 2 倍）。
+
+## 加第三套风格要做什么
+
+复制 templates/minimal.js 改视觉，然后在 make-video.mjs 里
+--template <name> 就能选。不需要改任何其他文件。
+
+ruff All checks passed / 60 测试全过。
