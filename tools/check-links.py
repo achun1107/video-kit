@@ -23,6 +23,7 @@ DOCS = [
     'README.md', 'CONTRIBUTING.md', 'SECURITY.md', 'CHANGELOG.md',
     'AGENTS.md', 'NOTICE',
     'docs/FAQ.md', 'docs/USAGE.md', 'docs/ARCHITECTURE.md',
+    'docs/VRT.md', 'docs/HOWTO-ASK.md',
 ]
 
 # 这些域名不稳定或本来就慢，跳过

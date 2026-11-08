@@ -37,6 +37,39 @@ node tools/make-video.mjs --douyin "https://v.douyin.com/xxxxxx/" --out ./my-vid
 
 ---
 
+## 两种输入
+
+### GitHub 仓库
+
+```bash
+node tools/make-video.mjs --repo <url 或本地目录> --out <工程目录>
+```
+
+### 抖音视频
+
+```bash
+node tools/make-video.mjs --douyin "<分享链接>" --out <工程目录>
+```
+
+脚本会下载原片、本地转写、反查视频里讲的仓库，再走同一套出片流程。
+点赞最高的那条常常不是 GitHub 项目，所以会按赞降序逐条试，命中就停。
+
+### 怎么把需求说清楚
+
+只给链接也能跑，但**文案会是套话**。加上一句话卖点，质量差一档。
+
+```
+帮我把 https://github.com/xxx/yyy 做成视频。
+卖点：一句话让 AI 接管浏览器
+重点讲：多进程锁、请求限流
+受众：同行
+```
+
+**详细模板见 [docs/HOWTO-ASK.md](docs/HOWTO-ASK.md)** —— 包括什么会自动做、
+什么要你定、一次真实翻车的案例分析。
+
+---
+
 ## 安装
 
 ### 依赖
@@ -283,9 +316,11 @@ python engine/render.py <工程> --det           # 两次渲染必须一模一�
 
 | 文档 | 内容 |
 |---|---|
+| **[怎么说清需求](docs/HOWTO-ASK.md)** | **给链接 + 一句话卖点，剩下的交给它** ← 不看代码先看这个 |
 | [完整用法](docs/USAGE.md) | 参数、字段、时间轴、配色、配乐 |
 | [常见问题](docs/FAQ.md) | 装不上、渲不出来、`--det` 不过、文字重叠 |
 | [架构说明](docs/ARCHITECTURE.md) | 为什么每帧是纯函数、三层职责、扩展点 |
+| [视觉回归](docs/VRT.md) | 改完画面怎么验有没有碰坏别的卡 |
 | [变更记录](CHANGELOG.md) | 版本历史 + 踩过的坑 |
 | [参与贡献](CONTRIBUTING.md) | PR 标准、代码规范、提交信息格式 |
 | [安全策略](SECURITY.md) | 报告漏洞、它会碰什么、不会碰什么 |
