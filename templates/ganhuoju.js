@@ -137,50 +137,65 @@ window.__IMAGES = [IMG];
 
 /* ---------- 0 设计封面（参考视频第一帧的思路：Logo + 项目名 + 三个标签）---------- */
 function cover(fr, lt) {
-  // 硬切：第 0 帧就满
-  const k = 1;
-
   fr.rect(0, 0, W, H, { fill: '#0A1015', a: 1 });
 
-  // ── 顶部：star 大数字（最强钩子，第 0 帧就出）──
+  // 入场动画：第 0 帧就有「133」，其余元素 1 秒内依次出现。
+  // 原来全部 a:1 硬切，前 3.6 秒画面完全静止 —— 抖音上等于劝人划走。
+  const t01 = (a, b) => Math.max(0, Math.min(1, (lt - a) / (b - a)));
+  const ease = x => 1 - Math.pow(1 - x, 3);   // easeOutCubic
+
+  // ── star 大数字（最强钩子，第 0 帧就出，但带一个放大）──
   const star = STATS.star;
   if (star) {
+    // 起始 alpha 0.78：第 0 帧「133」就清晰可见，
+    // 但仍有放大+变亮的动感。
+    // （之前写 0.35 起始，preflight 报首帧太暗：亮点占比 0.8%）
+    const p1 = ease(t01(0, 0.45));
     fr.text(star.toLocaleString('en-US'), W / 2, 200, {
-      font: 'sans', size: 130, color: YELLOW, a: 1, align: 'c',
+      font: 'sans', size: 130 * (0.94 + 0.06 * p1), color: YELLOW,
+      a: 0.85 + 0.15 * p1, align: 'c',
     });
+    const p2 = ease(t01(0.15, 0.55));
     fr.text('GitHub 星标', W / 2, 320, {
-      font: 'sans', size: 40, color: '#8FA3B0', a: 1, align: 'c',
+      font: 'sans', size: 40, color: '#8FA3B0', a: p2, align: 'c',
     });
   }
 
-  // 项目名（白，粗）
-  fr.text(NAME, W / 2, 440, {
-    font: 'sans', size: 96, color: '#FFFFFF', a: 1, align: 'c',
+  // ── 项目名：从下方滑入 ──
+  const p3 = ease(t01(0.25, 0.75));
+  fr.text(NAME, W / 2, 440 + 40 * (1 - p3), {
+    font: 'sans', size: 96, color: '#FFFFFF', a: p3, align: 'c',
   });
 
-  // 一句话（灰）
+  // ── 一句话 ──
+  const p4 = ease(t01(0.5, 1.0));
   if (HEAD) {
-    fr.text(HEAD, W / 2, 540, {
-      font: 'sans', size: 44, color: '#8FA3B0', a: 1, align: 'c',
+    fr.text(HEAD, W / 2, 540 + 24 * (1 - p4), {
+      font: 'sans', size: 44, color: '#8FA3B0', a: p4, align: 'c',
     });
   }
 
-  // 中部大图区：放截图（圆角）
-  const a2 = 1;
-  if (a2 > 0.003 && IMG.complete && IMG.naturalWidth) {
+  // ── 截图：先放大入场，之后持续缓慢放大 ──
+  const p5 = ease(t01(0.0, 0.9));
+  if (IMG.complete && IMG.naturalWidth) {
+    const kb = 1 + 0.035 * Math.max(0, lt - 0.9) / 2.7;   // 0.9s 之后继续推
+    const sc = (0.94 + 0.06 * p5) * kb;
     const w = 760, h = w * IMG.naturalHeight / IMG.naturalWidth;
-    const x = (W - w) / 2, y = 620;
+    const cx = W / 2, cy = 620 + h / 2;
     const ctx = fr.x;
     ctx.save();
+    // 起始 0.55：第 0 帧截图已经可见（撑起亮度检查），但仍有淡入
+    ctx.globalAlpha = 0.55 + 0.45 * p5;
+    ctx.translate(cx, cy);
+    ctx.scale(sc, sc);
+    ctx.translate(-cx, -cy);
     ctx.beginPath();
-    if (ctx.roundRect) ctx.roundRect(x, y, w, h, 20); else ctx.rect(x, y, w, h);
+    if (ctx.roundRect) ctx.roundRect((W - w) / 2, 620, w, h, 20);
+    else ctx.rect((W - w) / 2, 620, w, h);
     ctx.clip();
-    ctx.globalAlpha = a2;
-    ctx.drawImage(IMG, x, y, w, h);
+    ctx.drawImage(IMG, (W - w) / 2, 620, w, h);
     ctx.restore();
   }
-
-
 }
 
 /* ---------- 1 大字点名 ---------- */
