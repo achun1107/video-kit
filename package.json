@@ -16,7 +16,8 @@
     "vrt": "python tests/vrt.py",
     "vrt:update": "python tests/vrt.py --update",
     "lint": "python -m ruff check .",
-    "lint:fix": "python -m ruff check . --fix"
+    "lint:fix": "python -m ruff check . --fix",
+    "preflight": "python tools/preflight.py"
   },
   "engines": {
     "node": ">=18"
