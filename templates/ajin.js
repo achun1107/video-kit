@@ -275,7 +275,17 @@ function outroBar(fr, a, o) {
   const accent = o.accent || '#FFE500';
 
   // 深色底带：CTA 压在截图上会跟内容混在一起，必须托出来
-  fr.rect(0, y - 56, W, 210, { fill: '#000000', a: a * 0.82 });
+  // 渐变压暗：从 y-90 一路压到画面底部。
+  // 不做成固定高度的横带 —— 那样会像贴了一条黑胶布，上下都露出截图。
+  const _g = fr.x.createLinearGradient(0, y - 90, 0, H);
+  _g.addColorStop(0, 'rgba(0,0,0,0)');
+  _g.addColorStop(0.34, 'rgba(0,0,0,0.88)');
+  _g.addColorStop(1, 'rgba(0,0,0,0.95)');
+  fr.x.save();
+  fr.x.globalAlpha *= a;
+  fr.x.fillStyle = _g;
+  fr.x.fillRect(0, y - 90, W, H - (y - 90));
+  fr.x.restore();
 
   // 系列号
   const series = (CT.series || 0);
