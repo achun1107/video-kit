@@ -23,6 +23,16 @@ node tools/make-video.mjs --douyin "https://v.douyin.com/xxxxxx/" --out ./my-vid
 
 ---
 
+## 看看出片长什么样
+
+![demo](assets/demo-frames.png)
+
+一条真实产出的片子（讲 [heygen-com/hyperframes](https://github.com/heygen-com/hyperframes)）：
+
+▶ **[看完整成片 demo.mp4（34.8s）](https://github.com/achun1107/video-kit/releases/download/v1.0.0/demo.mp4)**
+
+---
+
 ## 快速开始
 
 ```bash
