@@ -93,7 +93,7 @@ if (existsSync(kitFonts)) {
 const idx = join(out, 'index.html');
 if (!existsSync(idx) || has('--reset-html')) {
   const tpl = join(KIT, 'tools', 'index.template.html');
-  if (!existsSync(tpl)) sys.exit('缺少 tools/index.template.html');
+  if (!existsSync(tpl)) process.exit('缺少 tools/index.template.html');
   writeFileSync(idx, readFileSync(tpl, 'utf8'), 'utf8');
   console.log('  + index.html（竖屏模板）');
 }
@@ -104,78 +104,109 @@ let repoArgFinal = repoArg;
 
 if (douyinArg) {
   step(0.5, '抖音：下载原视频并逆向');
+  let resolved = {};
   const work = join(out, 'douyin');
   mkdirSync(work, { recursive: true });
 
-  // 1) 解析链接 → 视频列表
-  const resolveJson = join(work, 'resolve.json');
-  run(PY, [join(KIT, 'tools', 'douyin-resolve.py'), douyinArg, '--json', resolveJson, '--max', '10']);
-  let resolved = { videos: [] };
-  try { resolved = JSON.parse(readFileSync(resolveJson, 'utf8')); } catch { }
-  if (!resolved.videos || !resolved.videos.length) {
-    sys.exit('× 抖音链接里没解析出视频');
+  // 1) 抓视频列表（带点赞数和真实标题）
+  const rankJson = join(work, 'rank.json');
+  run(PY, [join(KIT, 'tools', 'douyin-rank.py'), douyinArg,
+           '-o', rankJson, '--max', arg('--list-max', '20')]);
+  let rank = { videos: [] };
+  try { rank = JSON.parse(readFileSync(rankJson, 'utf8')); } catch { }
+  if (!rank.videos || !rank.videos.length) {
+    process.exit('× 抖音链接里没解析出视频');
   }
-  const pick = resolved.videos[0];
-  console.log(`  选中视频：${pick.id}`);
 
-  // 2) 下载
+  // 选哪条：
+  //   --video <id>  指定某条
+  //   否则按点赞降序逐条试，选第一条能识别出仓库的（最多 --try 条，默认 4）
+  // 为什么要逐条试：点赞最高的那条讲的是 ChatGPT 内置功能，压根没有 GitHub
+  // 仓库，盲选第一条必然失败。
+  const wantId = arg('--video');
+  const maxTry = parseInt(arg('--try', '4'), 10) || 4;
+  const pool = wantId
+    ? rank.videos.filter(v => v.id === String(wantId)).concat(rank.videos)
+    : rank.videos;
+  const candidates = pool.slice(0, Math.max(1, maxTry));
+
   const dlDir = join(work, 'dl');
-  if (!has('--skip-download')) {
-    run(PY, [join(KIT, 'tools', 'douyin-download.py'), pick.id, '-o', dlDir]);
-  }
-  const mp4 = readdirSync(dlDir).filter(f => f.endsWith('.mp4'))
-    .map(f => join(dlDir, f))[0];
-  if (!mp4 || !existsSync(mp4)) sys.exit('× 视频没下载下来');
-  console.log(`  原片：${mp4}`);
+  mkdirSync(dlDir, { recursive: true });
 
-  // 3) 转写
-  const asrJson = join(work, 'asr.json');
-  if (!existsSync(asrJson) || has('--reset-asr')) {
-    run(PY, [join(KIT, 'tools', 'transcribe-local.py'), mp4,
-             '--model', arg('--asr-model', 'small'), '--out', asrJson]);
-  }
-  let asr = { full: '', repos: [] };
-  try { asr = JSON.parse(readFileSync(asrJson, 'utf8')); } catch { }
+  let repoFromVideo = null;
+  let pick = null;
+  let asrJson = null;
 
-  // 4) 决定仓库
-  let repoFromVideo = (asr.repos && asr.repos[0]) || null;
-  if (!repoFromVideo) {
-    // 从标题和全文里找已知工具名 → 仓库
-    const KNOWN = [
-      // [匹配词, 仓库] —— 含转写常见误听
-      ['hyperframes', 'heygen-com/hyperframes'],
-      ['hyper frames', 'heygen-com/hyperframes'],
-      ['happy frames', 'heygen-com/hyperframes'],   // whisper 常把 HyperFrames 听成这个
-      ['hyperframe', 'heygen-com/hyperframes'],
-      ['video-use', 'browser-use/video-use'],
-      ['video use', 'browser-use/video-use'],
-      ['videouse', 'browser-use/video-use'],
-      ['remotion', 'remotion-dev/remotion'],
-      ['generative media', ''],
-      ['seedance', ''],
-    ];
-    const titleLow = String(resolved.title || '').toLowerCase();
-    const bodyLow = String(asr.full || '').toLowerCase();
-    // 标题里出现的最可信，其次才是正文
-    for (const [needle, slug] of KNOWN) {
-      if (slug && titleLow.includes(needle)) { repoFromVideo = slug; break; }
-    }
-    if (!repoFromVideo) {
-      for (const [needle, slug] of KNOWN) {
-        if (slug && bodyLow.includes(needle)) { repoFromVideo = slug; break; }
+  for (let ci = 0; ci < candidates.length; ci += 1) {
+    const v = candidates[ci];
+    const dg = (v.digg || 0).toLocaleString();
+    console.log(`\n  试 ${ci + 1}/${candidates.length}：${dg} 赞  ${String(v.title || '').slice(0, 34)}`);
+
+    // 下载
+    const mp4 = join(dlDir, `${v.id}.mp4`);
+    if (!existsSync(mp4) && !has('--skip-download')) {
+      try {
+        run(PY, [join(KIT, 'tools', 'douyin-download.py'), v.id, '-o', dlDir]);
+      } catch (e) {
+        console.log('   下载失败');
       }
     }
-  }
-  if (!repoFromVideo) {
-    console.warn('  转写和标题里都没找到仓库地址');
-    console.warn('  可以用 --repo 手工指定，流程继续');
-    if (!has('--repo')) {
-      sys.exit('× 需要 --repo <owner/repo> 指定要讲哪个仓库');
+    if (!existsSync(mp4)) {
+      console.log('   没有文件，跳过');
+      continue;
     }
-  } else {
-    console.log(`  视频里讲的是：${repoFromVideo}`);
-    repoArgFinal = repoFromVideo;
+
+    // 转写
+    const aj = join(work, `asr-${v.id}.json`);
+    if (!existsSync(aj) || has('--reset-asr')) {
+      try {
+        run(PY, [join(KIT, 'tools', 'transcribe-local.py'), mp4,
+                 '--model', arg('--asr-model', 'small'), '--out', aj]);
+      } catch (e) {
+        console.log('   转写失败');
+      }
+    }
+    if (!existsSync(aj)) {
+      console.log('   没有转写结果，跳过');
+      continue;
+    }
+
+    // 找仓库
+    const fj = join(work, `found-${v.id}.json`);
+    try {
+      run(PY, [join(KIT, 'tools', 'repo-finder.py'), aj, '--title', v.title || '', '-o', fj]);
+    } catch (e) {
+      // repo-finder 没把握时退出码是 1，正常
+    }
+    let found = {};
+    try { found = JSON.parse(readFileSync(fj, 'utf8')); } catch { }
+
+    if (found.confident && found.best) {
+      repoFromVideo = found.best;
+      pick = v;
+      asrJson = aj;
+      console.log(`   ✓ 视频里讲的是：${repoFromVideo}`);
+      break;
+    }
+    if (found.candidates && found.candidates.length) {
+      console.log('   候选：' + found.candidates.slice(0, 2)
+        .map(c => `${c.full_name}(${c.stars})`).join('  '));
+    }
+    console.log('   没把握，换下一条');
   }
+
+  if (!pick) {
+    if (has('--repo')) {
+      console.log('  候选都没识别出仓库，按 --repo 指定的继续');
+    } else {
+      process.exit(`× 前 ${candidates.length} 条都没识别出仓库。用 --repo <owner/repo> 指定，或 --video <id> 选一条`);
+    }
+  }
+  if (pick) {
+    console.log(`\n  选中：${pick.id}  ${pick.url}`);
+    resolved.title = pick.title;
+  }
+  if (repoFromVideo) repoArgFinal = repoFromVideo;
 
   // 5) 用 API 直接生成 content.json（大仓库 clone 会超时）
   if (!has('--repo') || repoFromVideo) {

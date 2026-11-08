@@ -40,30 +40,86 @@ node tools/make-video.mjs --douyin "https://v.douyin.com/xxxx/" --out <工程目
 | 类型 | 重定向到 | 处理 |
 |---|---|---|
 | **视频分享** | `/share/video/<id>` | 直接拿到 id |
-| **主页分享** | `/share/user/<sec_uid>` | 打开主页，拦截 API + 滚动抓视频列表 |
+| **主页分享** | `/share/user/<sec_uid>` | 打开主页，拦截 API + 滚动抓视频列表（带点赞数） |
 
 拿到视频后的流程：
 
 ```
-下载原片（提取 mp4 直链，绕过 yt-dlp）
+抓列表（含点赞数，按赞降序）
   ↓
-本地转写（faster-whisper，不依赖网络）
-  ↓
-从转写文本 + 标题里找仓库
-  ↓  （转写会把英文专名听错，映射表带误听变体：
-  ↓    HyperFrames → "Happy Frames" / video-use → "Videos"）
-用 GitHub API 生成 content.json（大仓库 clone 会超时，API 更快）
-  ↓
-走原来的出片流程
+逐条试：下载 → 本地转写 → 反查仓库
+  ↓  （第一条没识别出仓库就自动换下一条，最多 --try 条）
+命中仓库 → GitHub API 生成 content.json → 走原来的出片流程
 ```
 
-**抖音反爬是怎么绕过的**：yt-dlp 会报 `Fresh cookies are needed`，即使从浏览器导出 cookie 也不行。所以改成用 Playwright 打开页面，直接从 `RENDER_DATA` 和 `video[src]` 里挖 mp4 直链，并把 `playwm` 换成 `play` 去水印。
+**为什么是「逐条试」**：点赞最高的那条往往不是 GitHub 项目
+（比如讲 ChatGPT 内置功能的），盲选第一条必然失败。
+
+---
+
+## 批量逆向高赞视频
+
+```bash
+# 1. 抓主页视频列表，按点赞排序
+python tools/douyin-rank.py "https://v.douyin.com/xxxx/" -o rank.json --max 40
+
+# 2. 逆向前 N 条：下载 + 转写 + 找仓库
+python tools/reverse-batch.py rank.json -o reversed.json --top 5
+
+# 3. 单独确认某条的仓库（带候选和置信度）
+python tools/repo-finder.py douyin/asr/<id>.json --title "视频标题" -o found.json
+```
+
+实测 5 条高赞视频的结果（账号「AI科技视野」）：
+
+| 点赞 | 视频 | 识别出的仓库 | |
+|---|---|---|---|
+| 18,470 | GPT 调色 | — | 不是 GitHub 项目，正确判为「不采信」 |
+| 15,930 | 字节开源黑科技 | `bytedance/UI-TARS-desktop` | ✅ |
+| 11,979 | Codex 自动化链路 | `heygen-com/hyperframes` | ✅ |
+| 3,724 | 紫微斗数排盘 | `Renhuai123/ziwei-doushu` | ✅ |
+| 373 | 微软 Agent 训练 | `microsoft/agent-lightning` | ✅ |
+
+**4/5 命中，剩下 1 条正确识别为「没有仓库」。**
+
+### 怎么做到的
+
+口播里找仓库有三个坑，逐个填：
+
+1. **转写误听**——whisper 把专名听错：`Gatehub`→GitHub、`紫围斗树`→紫微斗数、
+   `温软`→微软、`CodeS`→Codex、`Happy Frames`→HyperFrames。
+   用 `tools/asrfix.py` 的纠正表（一次性替换，循环 replace 会叠出 `HyperFramess`）。
+
+2. **关键词**——滑窗切中文会切出「紫微斗数的开」这种碎片，搜什么都搜不到。
+   改用 `jieba.analyse.extract_tags`（TF-IDF）。
+
+3. **排序**——口播经常报 star 数（「3.6万star」「一点八万star」），这是最强指纹。
+   `tools/repo-finder.py` 把 star 接近度 + 公司（字节→bytedance、微软→microsoft）
+   + 关键词命中算成总分，并要求「绝对分 ≥60 且领先第二名 ≥4」才采信，
+   否则报告「没把握」而不是硬凑一个。
+
+---
+
+## 两档文案
+
+```bash
+python tools/script-writer.py <工程目录>                          # 只用模板稿
+python tools/script-writer.py <工程目录> --from-asr douyin/asr/x.json  # 生成模板稿 + 参考稿
+```
+
+| 档 | 依据 | 特点 |
+|---|---|---|
+| **模板稿** | 只读 `content.json`，套固定骨架 | 永远能出片，信息密度低 |
+| **参考稿** | 借原视频的转写结构和节奏，换主语 | 有原片时质量明显更高 |
+
+两档都写进 `audio/copy.json` 的 `variants` 字段，`vo1`/`vo2` 是最终采用的那档（`--style` 指定）。
 
 ---
 
 ## 它长什么样
 
 七张卡，固定结构，内容全部来自仓库：
+
 
 
 ```
