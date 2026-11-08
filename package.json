@@ -12,7 +12,9 @@
     "audit": "python -m pip_audit -r requirements.txt",
     "fonts": "python engine/get_fonts.py",
     "selfcheck": "npm run check && npm test && npm run links && npm run history",
-    "demo": "node tools/make-video.mjs --repo https://github.com/achun1107/video-kit --out ./out"
+    "demo": "node tools/make-video.mjs --repo https://github.com/achun1107/video-kit --out ./out",
+    "vrt": "python tests/vrt.py",
+    "vrt:update": "python tests/vrt.py --update"
   },
   "engines": {
     "node": ">=18"

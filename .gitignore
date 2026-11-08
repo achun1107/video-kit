@@ -44,3 +44,7 @@ package-lock.json
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# 视觉回归的临时产物
+tests/.vrt-work/
+tests/.vrt-diff/

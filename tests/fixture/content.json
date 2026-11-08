@@ -1,0 +1,68 @@
+{
+  "repo": "achun1107/video-kit",
+  "namePlain": "video-kit",
+  "emoji": "",
+  "headline": "一条命令，仓库变竖屏视频",
+  "tagline": "GitHub 仓库 / 抖音链接 → 1080×1920 讲解片",
+  "version": "1.0.1",
+  "accent": "#E8613C",
+  "accent2": "#2F9E8F",
+  "stats": {
+    "star": 60,
+    "fork": 7
+  },
+  "statLabels": {
+    "star": "Star",
+    "fork": "Fork"
+  },
+  "features": [
+    {
+      "title": "纯函数渲染",
+      "desc": "每帧是 t 的函数，可复现"
+    },
+    {
+      "title": "内容画面分离",
+      "desc": "film.js 只读 content.json"
+    },
+    {
+      "title": "两种输入",
+      "desc": "仓库地址或抖音链接"
+    },
+    {
+      "title": "零运行时依赖",
+      "desc": "tools/*.mjs 全标准库"
+    }
+  ],
+  "chapters": [
+    {
+      "no": "01",
+      "title": "铺骨架"
+    },
+    {
+      "no": "02",
+      "title": "仓库就位"
+    },
+    {
+      "no": "03",
+      "title": "抽内容"
+    },
+    {
+      "no": "04",
+      "title": "配音"
+    },
+    {
+      "no": "05",
+      "title": "渲染"
+    },
+    {
+      "no": "06",
+      "title": "混音"
+    }
+  ],
+  "conclusion": [
+    "完全开源",
+    "60 个测试",
+    "一条命令出片"
+  ],
+  "listTitle": "九步流水线"
+}

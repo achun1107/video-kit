@@ -1,0 +1,30 @@
+{
+  "generated_at": "4fe36060dc7ee261127b4ea4c0230deaa6016b20 2026-11-08 14:24:16 +0800",
+  "scale": [
+    360,
+    640
+  ],
+  "frames": [
+    "card1_cover",
+    "card2_stats",
+    "card3_shot",
+    "card4_features",
+    "card5_highlight",
+    "card6_list",
+    "card7_conclusion",
+    "subtitle",
+    "end"
+  ],
+  "times": [
+    2.0,
+    5.0,
+    9.5,
+    12.0,
+    16.0,
+    19.5,
+    24.0,
+    6.5,
+    30.0
+  ],
+  "note": "基准帧只在本机环境有效。换机器/换字体要 --update 重建。"
+}
