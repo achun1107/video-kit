@@ -36,10 +36,12 @@ const has = n => process.argv.includes(n);
 const repoArg = arg('--repo');
 const douyinInput = arg('--douyin');
 let douyinAsr = null;   // 抖音流程的转写结果，用来生成参考稿
-if (!repoArg && !douyinInput) {
+const videoArg = arg('--video');   // 任意站点视频链接，或本地文件
+if (!repoArg && !douyinInput && !videoArg) {
   console.error('用法:');
   console.error('  node tools/make-video.mjs --repo <github url|本地目录> --out <工程目录>');
   console.error('  node tools/make-video.mjs --douyin <抖音分享链接> --out <工程目录>');
+  console.error('  node tools/make-video.mjs --video <任意视频链接|本地文件> --out <工程目录>');
   console.error('可选: [--skip-render] [--reset-film] [--reset-html] [--music mp3] [--asr-model small]');
   process.exit(2);
 }
@@ -102,6 +104,78 @@ if (!existsSync(idx) || has('--reset-html')) {
 /* ══ 0.5 抖音链接：先下载原片、逆向、找仓库 ══ */
 const douyinArg = arg('--douyin');
 let repoArgFinal = repoArg;
+
+/* ══ 0.4 通用视频：任意站点链接 / 本地文件 ══
+ * 和抖音的区别：抖音要按点赞排序逐条试（一个主页链接含多个视频），
+ * 这里给的就是一条视频的直链，直接下。
+ * 平台支持由 yt-dlp 决定（1755 个站点，含 YouTube/B站/小红书/微博/TikTok）。
+ */
+if (videoArg && !douyinArg) {
+  step(0.4, '视频：下载 + 转写 + 找仓库');
+  const work = join(out, 'video');
+  mkdirSync(work, { recursive: true });
+
+  // 1) 下载（本地文件会直接复制）
+  run(PY, [join(KIT, 'tools', 'video-download.py'), videoArg, '-o', work]);
+
+  const mp4 = join(work, 'video.mp4');
+  const srt = join(work, 'subs.srt');
+  const asrOut = join(work, 'asr.json');
+
+  if (!existsSync(mp4)) process.exit('× 视频没下载下来');
+
+  // 2) 有站点字幕就转成 asr.json（省掉本地转写，而且更准）
+  if (existsSync(srt)) {
+    console.log('  用站点字幕（比本地转写准）');
+    try {
+      run(PY, [join(KIT, 'tools', 'srt-to-asr.py'), srt, '-o', asrOut]);
+    } catch {
+      console.log('  字幕解析失败，退回本地转写');
+    }
+  }
+
+  // 3) 没有字幕才本地转写
+  if (!existsSync(asrOut) || has('--reset-asr')) {
+    run(PY, [join(KIT, 'tools', 'transcribe-local.py'), mp4,
+             '--model', arg('--asr-model', 'small'), '--out', asrOut]);
+  }
+
+  // 4) 找仓库
+  let videoTitle = '';
+  try {
+    const m = JSON.parse(readFileSync(join(work, 'meta.json'), 'utf8'));
+    videoTitle = m.title || '';
+  } catch { }
+
+  const foundJson = join(work, 'found.json');
+  try {
+    run(PY, [join(KIT, 'tools', 'repo-finder.py'), asrOut,
+             '--title', videoTitle, '-o', foundJson]);
+  } catch {
+    console.log('  （repo-finder 退出码非 0，多半是没把握）');
+  }
+
+  let videoRepo = null;
+  try {
+    const found = JSON.parse(readFileSync(foundJson, 'utf8'));
+    if (found.confident && found.best) {
+      videoRepo = found.best;
+      console.log(`  ✓ 视频里讲的是：${videoRepo}`);
+    } else {
+      console.log('  没把握确定是哪个仓库');
+      if (found.candidates && found.candidates.length) {
+        console.log('  候选：' + found.candidates.slice(0, 3)
+          .map(c => `${c.full_name}(${c.stars})`).join('  '));
+      }
+    }
+  } catch { }
+
+  if (!videoRepo && !has('--repo')) {
+    process.exit('× 视频里没识别出仓库，用 --repo <owner/repo> 指定');
+  }
+  if (videoRepo) repoArgFinal = videoRepo;
+  douyinAsr = asrOut;   // 复用参考稿逻辑
+}
 
 if (douyinArg) {
   step(0.5, '抖音：下载原视频并逆向');

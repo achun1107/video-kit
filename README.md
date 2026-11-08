@@ -37,22 +37,53 @@ node tools/make-video.mjs --douyin "https://v.douyin.com/xxxxxx/" --out ./my-vid
 
 ---
 
-## 两种输入
+## 三种输入
 
-### GitHub 仓库
+### 1. GitHub 仓库
 
 ```bash
 node tools/make-video.mjs --repo <url 或本地目录> --out <工程目录>
 ```
 
-### 抖音视频
+### 2. 任意视频链接
+
+```bash
+node tools/make-video.mjs --video <视频链接|本地文件> --out <工程目录>
+```
+
+能下什么由 [yt-dlp](https://github.com/yt-dlp/yt-dlp) 决定，**1755 个站点**，包括：
+
+| 支持 | 不支持 |
+|---|---|
+| YouTube、B站、小红书、微博、TikTok、Twitter/X、Reddit、Vimeo | 快手、视频号 |
+
+给本地文件路径也行（`.mp4` / `.mov` / `.mkv`），会直接复制过去。
+
+**有站点字幕就优先用字幕**（YouTube/B站 的人工字幕比本地转写准，而且有精确时间戳），
+没字幕才跑 faster-whisper。之后一样是「反查仓库 → 出片」。
+
+### 3. 抖音分享链接
 
 ```bash
 node tools/make-video.mjs --douyin "<分享链接>" --out <工程目录>
 ```
 
-脚本会下载原片、本地转写、反查视频里讲的仓库，再走同一套出片流程。
-点赞最高的那条常常不是 GitHub 项目，所以会按赞降序逐条试，命中就停。
+和 `--video` 的区别：抖音的主页分享链接含**几十条视频**，而且没有单条直链。
+所以这条路径会先抓列表（带点赞数）、按赞降序逐条试、命中仓库就停。
+
+---
+
+### 三种输入的关系
+
+```
+--video    一条视频的直链          → 下载 → 转写/字幕 → 找仓库
+--douyin   一个主页（含多条）      → 抓列表 → 逐条试 → 找仓库
+--repo     一个仓库                → 抽内容 → 出片
+                                       ↓
+                                  同一套出片流程
+```
+
+三者最终都汇总到 `content.json` + `audio/copy.json`，然后走同样的九步。
 
 ### 怎么把需求说清楚
 

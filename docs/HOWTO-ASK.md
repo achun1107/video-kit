@@ -19,6 +19,12 @@ https://github.com/owner/repo
 3- 长按复制此条消息，打开抖音精选搜索… https://v.douyin.com/xxxxxx/
 ```
 
+**其他平台的视频链接也行**（B站/YouTube/小红书/微博/TikTok…），
+只要是 [yt-dlp 支持的站点](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)。
+本地视频文件路径也可以。
+
+有字幕的站点（YouTube/B站）会直接用站点字幕，比本地转写准。
+
 只给链接也能跑，但**出来的文案是套话**（见下面「真实案例」）。所以最好加上第二样东西。
 
 ---
