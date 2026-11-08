@@ -195,11 +195,14 @@ def main():
         shot = None
 
     # 小红书主feed露出的少，用更方一点的尺寸
+    # B站后台要求的是 16:10 横图（1146×717），竖屏视频也按这个上传；
+    # 但竖屏视频在信息流里会裁切显示，所以额外出一份竖版备用。
     sizes = {
-        'douyin':   (1080, 1920),
-        'xhs':      (1080, 1440),
-        'channels': (1080, 1260),
-        'bilibili': (1080, 1920),
+        'douyin':     (1080, 1920),
+        'xhs':        (1080, 1440),
+        'channels':   (1080, 1260),
+        'bilibili':   (1146, 717),
+        'bilibili-v': (1080, 1920),
     }
 
     outdir = proj / 'renders'
@@ -209,7 +212,7 @@ def main():
     for plat, size in sizes.items():
         p = outdir / f'cover-{plat}.png'
         make_cover(size, p, c, shot)
-        print(f'  {plat:10s} {size[0]}×{size[1]}  {p.name}  '
+        print(f'  {plat:11s} {size[0]}×{size[1]}  {p.name}  '
               f'{p.stat().st_size // 1024}KB')
 
     print(f'\n在 {outdir}')

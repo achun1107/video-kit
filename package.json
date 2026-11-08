@@ -17,7 +17,10 @@
     "vrt:update": "python tests/vrt.py --update",
     "lint": "python -m ruff check .",
     "lint:fix": "python -m ruff check . --fix",
-    "preflight": "python tools/preflight.py"
+    "preflight": "python tools/preflight.py",
+    "check:pkg": "python tools/check-package.py",
+    "score": "python tools/score-repo.py",
+    "make": "python tools/auto-make.py"
   },
   "engines": {
     "node": ">=18"
