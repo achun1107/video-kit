@@ -77,7 +77,10 @@ def main():
         inputs += ["-stream_loop", "-1", "-i", str(mp)]
         filters.append(
             f"[{idx}:a]aresample=48000,"
-            f"atrim=0:{end:.3f},asetpts=N/SR/TB,"
+            # 先循环再截断：BGM 只有 10~16 秒，视频 34.8 秒，
+             # 直接 atrim 会让后半段完全没音乐
+             f"aloop=loop=-1:size=2e9,"
+             f"atrim=0:{end:.3f},asetpts=N/SR/TB,"
             f"volume={music_gain},"
             f"afade=t=in:st=0:d=0.6,afade=t=out:st={end - 1.8:.3f}:d=1.8,"
             f"pan=stereo|c0=c0|c1=c0[mu]"

@@ -1,0 +1,38 @@
+fix: BGM 没循环（后半段 18 秒没音乐）+ 四条用不同曲子
+
+## 问题 1：BGM 只覆盖了前半段
+
+mix.py 里是 `atrim=0:{end}` —— 直接截断，没有循环。
+
+但六首 BGM 都只有 10~16 秒，视频 34.8 秒。
+
+结果：**34.8 秒的片子只有前 16 秒有音乐，后面 18 秒是干的**。
+而且后半段正好是讲功能、CTA 的部分 —— 最需要氛围的地方反而没音乐。
+
+改成先 `aloop=loop=-1:size=2e9` 循环，再 atrim。
+
+验证：分段测音量
+  2-6s    -17.4 dB
+  16-20s  -16.9 dB
+  30-34s  -17.8 dB     ← 之前这段是干的，现在有音乐了
+
+## 问题 2：四条用同一首 BGM
+
+BGM 是音频指纹的重要成分。同 BGM + 同时长 + 同一项目，
+平台更容易判相似。
+
+六首可用，按风格分配：
+
+  ajin      Carefree          轻快，讲讲解语气
+  ganhuoju  Life_of_Riley     温和，配划重点
+  xiaokai   Fluffing_a_Duck   活泼，配推荐分享
+  weitu     Wallpaper         科技感，配产品发布
+
+四条音轨 MD5 现在全不同：
+  ajin E9DE1E3A  ganhuoju B40BA159  xiaokai EE7DDA6C  weitu 43BE4E04
+
+## 四条响度
+
+-14.8 / -13.3 / -11.7 / -13.9 LUFS，都在抖音推荐区间（-14~-9）。
+
+preflight 48 项全过 / ruff All checks passed / 60 测试通过。
