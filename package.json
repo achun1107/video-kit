@@ -1,0 +1,32 @@
+{
+  "name": "video-kit",
+  "version": "1.0.0",
+  "description": "一条命令把 GitHub 仓库或抖音视频变成竖屏讲解视频",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "check": "node --check tools/make-video.mjs && node --check tools/film-template.js && node --check tools/extract-content.mjs",
+    "test": "python -m pytest tests/ -q",
+    "links": "python tools/check-links.py",
+    "history": "python tools/scan-history.py",
+    "fonts": "python engine/get_fonts.py",
+    "demo": "node tools/make-video.mjs --repo https://github.com/achun1107/video-kit --out ./out"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "video-generation",
+    "canvas",
+    "playwright",
+    "ffmpeg",
+    "tts",
+    "douyin",
+    "pipeline"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/achun1107/video-kit.git"
+  }
+}

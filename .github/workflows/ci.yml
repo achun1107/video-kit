@@ -39,6 +39,11 @@ jobs:
           pip install --quiet pyflakes
           python -m pyflakes tools/*.py engine/*.py || true
 
+      - name: 单元测试
+        run: |
+          pip install --quiet pytest
+          python -m pytest tests/ -v
+
       - name: JSON 校验
         run: |
           for f in $(find . -name '*.json' -not -path './node_modules/*' -not -path './_repos/*'); do

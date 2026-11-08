@@ -74,25 +74,46 @@ def parse_cn_number(s):
         frac = ''.join(str(CN_DIGIT.get(c, 0)) for c in m.group(2))
         return float(f'{whole}.{frac}')
 
-    # "十八" → 18 / "三万六" → 36000 / "一百八" → 180
+    # "一百八" = 180，"一千三" = 1300（省略末位单位）
+    # 必须特判：通用循环会把它算成 100 + 8 = 108
+    m = re.fullmatch(r'([一二两三四五六七八九])([百千])([一二两三四五六七八九])', s)
+    if m:
+        base = CN_DIGIT[m.group(1)] * CN_UNIT[m.group(2)]
+        unit = CN_UNIT[m.group(2)] // 10
+        return float(base + CN_DIGIT[m.group(3)] * unit)
+
+    # "三万六" 这类省略末位单位的说法：= 3万 + 6千
+    # 必须在通用循环前特判，否则循环会把末尾的"六"当个位加进去，得到 30006
+    m = re.fullmatch(r'([一二两三四五六七八九])万([一二两三四五六七八九])', s)
+    if m:
+        return float(CN_DIGIT[m.group(1)] * 10000 + CN_DIGIT[m.group(2)] * 1000)
+
+    # 通用累加：十八 → 18
     total, section, last = 0, 0, 0
+    touched = False
     for ch in s:
         if ch in CN_DIGIT:
             last = CN_DIGIT[ch]
+            touched = True
         elif ch in CN_UNIT:
             u = CN_UNIT[ch]
             if last == 0:
                 last = 1
             section += last * u
             last = 0
+            touched = True
         elif ch == '万':
             section += last
             total += section * 10000
             section, last = 0, 0
+            touched = True
         elif ch == '亿':
             section += last
             total = (total + section) * 100000000
             section, last = 0, 0
+            touched = True
+    if not touched:
+        return None
     section += last
     return float(total + section)
 

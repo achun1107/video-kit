@@ -40,7 +40,7 @@ git clone https://github.com/achun1107/video-kit
 cd video-kit
 
 python engine/get_fonts.py                    # 14 个开源字体，43MB，只下一次
-pip install playwright edge-tts numpy scipy pillow
+pip install -r requirements.txt
 python -m playwright install chrome
 
 node tools/make-video.mjs --repo <仓库地址> --out ./out
@@ -49,6 +49,17 @@ node tools/make-video.mjs --repo <仓库地址> --out ./out
 需要 **Node ≥ 18**、**Python 3.10+**，`ffmpeg` 在 PATH 里。
 
 出片在 `out/renders/final.mp4`，播放页在 `out/renders/player.html`。
+
+### 自检
+
+```bash
+npm test              # 60 个测试，覆盖误听纠正、数字解析、SRT 解析、仓库卫生
+npm run check         # Node 脚本语法
+npm run links         # 文档外链体检
+npm run history       # 扫 git 历史里的明文密钥
+npm run fonts         # 下载字体
+```
+
 
 ---
 
@@ -195,9 +206,18 @@ audio/bgm/         6 首免版权配乐
 2. **私有仓库不行** — 抽内容要读文件
 3. **渲染 3–6 分钟** — 1044 帧，慢是正常的
 4. **抖音需要能访问抖音** — 网络不通就没法下载
-5. **没有测试** — 只有 CI 里的语法和结构检查，没有单元测试
+5. **测试只覆盖纯函数** — 60 个测试管误听纠正、中文数字解析、SRT 解析、仓库卫生，
+   但渲染正确性只有 `--det` 那一道关，没有像素级比对
 
----
+## 质量
+
+| 项目 | 状态 |
+|---|---|
+| 单元测试 | 60 个，`npm test` |
+| CI | GitHub Actions，语法 + 测试 + 结构 + 密钥扫描 |
+| 渲染确定性 | `--det` 两次结果比 md5 |
+| 死链检查 | `npm run links`，当前 7 个外链全通 |
+| 历史密钥扫描 | `npm run history`，当前 0 命中 |
 
 ## 授权
 
