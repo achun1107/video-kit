@@ -133,9 +133,13 @@ class TestNoSecrets:
         """
         files = git_files()
         text_ext = ('.md', '.txt', '.py', '.mjs', '.js', '.json', '.yml', '.yaml', '.html')
-        # 密钥扫描规则和它的测试文件会被自己的正则命中（里面写着 'ghp_' 字面量），
-        # 这两个文件豁免
-        SKIP = {'.github/workflows/ci.yml', 'tests/test_repo_structure.py'}
+        # 密钥扫描规则本身会被自己的正则命中（里面写着 'ghp_' 字面量），
+        # 这两个文件和 scanner 一起豁免
+        SKIP = {
+            '.github/workflows/ci.yml',
+            'tests/test_repo_structure.py',
+            'tools/scan-history.py',
+        }
         hits = []
         for f in files:
             if not f.endswith(text_ext) or f in SKIP:
