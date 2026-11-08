@@ -13,7 +13,6 @@ BGM 只有 10~16 秒，视频 34.8 秒，用 aloop 循环。
 差得多就需要在循环点加交叉淡化。
 """
 import subprocess
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -52,7 +51,6 @@ def main():
         # 各取 50ms
         n = int(sr * 0.05)
         head = rms_db(a[:n])
-        tail = rms_db(a[-n:])
 
         # 找最后一段有声的地方（尾部可能有静音填充）
         win = int(sr * 0.02)
@@ -65,7 +63,6 @@ def main():
         last_loud = (loud[-1] + 1) * 0.02 if len(loud) else 0
         dur = len(a) / sr
 
-        diff = abs(head - tail)
         # 如果尾部有静音填充，用最后一个有声点算
         tail_trim = rms_db(a[max(0, int(last_loud * sr) - n):int(last_loud * sr)])
         real_diff = abs(head - tail_trim)
