@@ -109,10 +109,21 @@ def main():
     else:
         sys.exit('没有 publish.md，先跑 publish-info.py')
 
+    # 3.5 预览页：内嵌压缩版视频，双击就能看，不用装播放器
+    ph = rdir / 'player.html'
+    has_preview = False
+    if ph.exists():
+        shutil.copy2(ph, out / '00_预览.html')
+        has_preview = True
+
     # 4. 怎么发
     (out / '怎么发.txt').write_text(HOWTO, encoding='utf-8')
 
     print(f'\n发布包：{out}')
+    if has_preview:
+        print('  00_预览.html       双击就能看')
+    else:
+        print('  00_预览.html       缺（先跑 make-player-html.py）')
     print(f'  01_成片.mp4        {size_mb:.1f} MB')
     print(f'  02_封面-*.png      {covers} 张')
     print('  03_发布文案.md')
