@@ -84,12 +84,18 @@ function titleCard(fr, text, y, a, o) {
   ctx.save();
   ctx.translate(W / 2, y);
   ctx.rotate(o.rot || 0);
-  // 白底
-  fr.rect(-bw / 2, -h / 2, bw, h, { r: 8, fill: o.bg || WHITE, a });
-  // 黑字
+  // 白底的透明度跟随第一行文字 —— 否则会出现"白框已经出来、字还没出现"的空框。
+  const firstIn = o.lineIn
+    ? (o.lineIn[0] === undefined ? 1 : o.lineIn[0])
+    : 1;
+  fr.rect(-bw / 2, -h / 2, bw, h, { r: 8, fill: o.bg || WHITE, a: a * firstIn });
+  // 黑字。o.lineIn 是逐行的入场进度数组（可选），
+  // 不传就整体一起出现（老行为）。
   lines.forEach((l, i) => {
-    fr.text(l, 0, -h / 2 + pad + lh * (i + 0.5) - size * 0.12, {
-      font: 'sans', size, color: o.fg || '#111111', a, align: 'c',
+    const li = o.lineIn ? (o.lineIn[i] === undefined ? 1 : o.lineIn[i]) : 1;
+    if (li <= 0.003) return;
+    fr.text(l, 0, -h / 2 + pad + lh * (i + 0.5) - size * 0.12 + 22 * (1 - li), {
+      font: 'sans', size, color: o.fg || '#111111', a: a * li, align: 'c',
     });
   });
   ctx.restore();
@@ -142,17 +148,36 @@ window.__IMAGES = [IMG];
 
 /* ---------- 1 标题卡 ---------- */
 function card1(fr, lt) {
-  // 硬切 + star 前置
+  // 入场动画：第 0 帧 star 就可见（过首帧亮度检查），其余元素 1 秒内依次出现。
+  // 原来是全 a:1 硬切，前 2 秒画面变化只有 1.6% —— 抖音上等于静止。
+  const t01 = (a, b) => Math.max(0, Math.min(1, (lt - a) / (b - a)));
+  const ease = x => 1 - Math.pow(1 - x, 3);
+
   const star = STATS.star;
   if (star) {
+    const p1 = ease(t01(0, 0.45));
+    // 星标持续呼吸（0.97~1.03，周期 2.4 秒）——
+    // 入场动画走完后画面不能完全静止，否则前 2 秒动感指标掉到「偏静」
+    const breath = 1 + 0.03 * Math.sin(lt * Math.PI * 2 / 2.4);
     fr.text(star.toLocaleString('en-US') + ' ★', W / 2, 340, {
-      font: 'sans', size: 110, color: '#FFD400', a: 1, align: 'c',
+      font: 'sans', size: 110 * (0.94 + 0.06 * p1) * breath, color: '#FFD400',
+      a: 0.85 + 0.15 * p1, align: 'c',
     });
   }
-  titleCard(fr, ['【' + NAME + '】', '开源工具'], 620, 1, { size: 82, rot: -0.02 });
-  const k = ss(lt, 0.4, 1.2);
+
+  // 标题两行依次滑入。
+  // 第一行从 0 秒起、alpha 0.6 起步 —— 否则第 0.1 秒画面只有「133 ★」太暗
+  // （preflight 的 D 项要求亮点占比 > 2%）。
+  const p2 = 0.6 + 0.4 * ease(t01(0.0, 0.5));
+  const p3 = ease(t01(0.30, 0.80));
+  // 1.2 秒之后整块缓慢上浮 —— card1 有 6 秒，不加会剩 4.8 秒完全静止
+  const drift = Math.max(0, lt - 1.2) * 22;
+  titleCard(fr, ['【' + NAME + '】', '开源工具'], 620 - drift, 1,
+    { size: 82, rot: -0.02, lineIn: [p2, p3] });
+
+  const k = ss(lt, 0.45, 1.2);
   if (k > 0.003) {
-    fr.rect(W / 2 - 240, 760, 480 * k, 8, { fill: '#FFD400', a: 0.9 });
+    fr.rect(W / 2 - 240, 760 - drift, 480 * k, 8, { fill: '#FFD400', a: 0.9 });
   }
 }
 

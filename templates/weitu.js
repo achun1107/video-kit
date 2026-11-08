@@ -183,30 +183,45 @@ const HEAD_LINES = (() => {
 
 /* ---------- 1 标题页 ---------- */
 function card1(fr, lt) {
-  // 硬切：第 0 帧就满
-  pill(fr, '开源项目', 300, 1);   // 项目 4 个月前就在更新，不叫新作
+  // 入场动画：标题逐行滑入，star 和说明依次补上。
+  // 原来是全 a:1，前 2 秒画面变化只有 1.6% —— 抖音上等于静止。
+  const t01 = (a, b) => Math.max(0, Math.min(1, (lt - a) / (b - a)));
+  const ease = x => 1 - Math.pow(1 - x, 3);
+
+  const pp = ease(t01(0, 0.35));
+  pill(fr, '开源项目', 300, pp);   // 项目 4 个月前就在更新，不叫新作
 
   const use = HEAD_LINES;
   use.forEach((ln, i) => {
-    fr.text(ln, W / 2, 440 + i * 108, {
-      font: 'sans', size: 88, color: WHITE, a: 1,
+    // 第一行从 0 秒起、alpha 0.65 起步 —— 否则 0.1 秒时画面 90% 是空的深蓝，
+    // preflight 的 D 项只测到 0.4% 亮点。
+    const pi = i === 0
+      ? 0.65 + 0.35 * ease(t01(0.0, 0.5))
+      : ease(t01(0.10 + i * 0.12, 0.55 + i * 0.12));
+    if (pi <= 0.003) return;
+    fr.text(ln, W / 2, 440 + i * 108 + 32 * (1 - pi), {
+      font: 'sans', size: 88, color: WHITE, a: pi,
     });
   });
 
-  // 副标题：star 第 0 帧就出（最强的信任背书，不能等到 0.8 秒）
+  // 副标题：等标题落定再出
   const star = STATS.star;
   const subY = 440 + use.length * 108 + 30;
-  if (star) {
-    gradText(fr, `GitHub ${star.toLocaleString('en-US')}+ ★`, subY, 52, 1);
+  const ps = ease(t01(0.55, 0.95));
+  if (star && ps > 0.003) {
+    gradText(fr, `GitHub ${star.toLocaleString('en-US')}+ ★`, subY, 52, ps);
   }
 
-  // 一行说明：三个卖点用 · 分隔
+  // 一行说明：最后出
   const tags = FEATURES.slice(0, 3).map(f =>
     String((typeof f === 'string') ? f : (f.title || f.name || '')).slice(0, 8));
   const line = tags.length ? tags.join(' · ') : '结构化 JSON · 稳定标识 · 毫秒级';
-  fr.text(line, W / 2, subY + 90, {
-    font: 'sans', size: 26, color: GRAY, a: 1,
-  });
+  const pl = ease(t01(0.75, 1.15));
+  if (pl > 0.003) {
+    fr.text(line, W / 2, subY + 90, {
+      font: 'sans', size: 26, color: GRAY, a: pl,
+    });
+  }
 }
 
 /* ---------- 2 GitHub 卡片 ---------- */
