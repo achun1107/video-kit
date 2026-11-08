@@ -3,6 +3,41 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.0.1] - 2026-11-08
+
+补齐质检报告里「自动判不了」的三项，并修掉它们抓出来的 bug。
+
+### 新增
+
+- **60 个单元测试**（`npm test`）
+  - `test_asrfix.py` 误听纠正、停用词过滤
+  - `test_repo_finder.py` 中文数字解析、star 线索、公司→org
+  - `test_tts.py` SRT 时间解析、多块、重叠时间
+  - `test_repo_structure.py` 仓库卫生、LICENSE 纯 MIT、README 图片存在、密钥扫描
+- **`tools/scan-history.py`** 扫全部 commit 的 diff 找明文密钥（当前 0 命中）
+- **`tools/check-links.py`** 文档外链体检（7 个可达，0 死链）
+- `requirements.txt` 10 个 Python 依赖带用途注释
+- `package.json` 脚本：test / check / links / history / fonts / demo
+- CI 加了 pytest 步骤，README 加了 CI 徽章
+
+### 修正
+
+- **`parse_cn_number('三万六')` 返回 30006 而不是 36000**
+  万位之后的单个数字被当成个位加进去了。这个函数用来识别口播里的 star 数，
+  算错会选错仓库。同类问题在「一百八」（返回 108）、「一千三」（返回 1003），
+  一并加特判修复，三种形态都有测试覆盖。
+- `parse_cn_number('abc')` 返回 0 而不是 None（无效输入没被识别）
+
+### 踩到的坑
+
+- `tools/scan-history.py` 里写着 PATTERNS 正则，被自己的扫描规则命中，
+  CI 挂在这一步。本地 60 个全过是因为豁免列表漏了 scanner 本身 ——
+  这种差异只有真跑一遍 CI 才看得见。
+- `repo-finder.py` 文件名带连字符，测试里不能直接 `import`，
+  要用 `importlib.util.spec_from_file_location` 加载。
+
+---
+
 ## [1.0.0] - 2026-11-08
 
 首个可用版本。

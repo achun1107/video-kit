@@ -1,8 +1,10 @@
 # video-kit
 
+[![CI](https://github.com/achun1107/video-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/achun1107/video-kit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-1f6feb.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A518-3c873a.svg)](package.json)
-[![Python](https://img.shields.io/badge/python-%E2%89%A53.10-3776ab.svg)](https://www.python.org)
+[![Python](https://img.shields.io/badge/python-%E2%89%A53.10-3776ab.svg)](requirements.txt)
+[![Tests](https://img.shields.io/badge/tests-60%20passed-brightgreen.svg)](tests/)
 [![Runtime deps](https://img.shields.io/badge/runtime%20deps-0-brightgreen.svg)](tools/make-video.mjs)
 [![Deterministic](https://img.shields.io/badge/render-deterministic-8b5cf6.svg)](docs/ARCHITECTURE.md)
 

@@ -1,6 +1,6 @@
 {
   "name": "video-kit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "一条命令把 GitHub 仓库或抖音视频变成竖屏讲解视频",
   "type": "module",
   "private": true,
