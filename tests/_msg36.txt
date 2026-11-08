@@ -1,0 +1,57 @@
+feat: 验证 4 条分支 + 修 cover-badge 路径 bug
+
+## 这轮验了什么
+
+auto-make 的 4 条分支从没跑过（之前只测过 5.6 分 → 2 条）。
+用 10 分项目 heygen-com/hyperframes（80,965 star）验证。
+
+结果：4 条全部跑通
+  [5] ganhuoju  34.8s → D:\publish\hyperframes-ganhuoju
+  [6] weitu     34.8s → D:\publish\hyperframes-weitu
+  [7] ajin      34.8s → D:\publish\hyperframes-ajin
+  [8] xiaokai   34.8s → D:\publish\hyperframes-xiaokai
+  [9] preflight ✓ 全部通过（48 项）
+
+四个包各 8 个文件（成片/4 封面/文案/预览/说明），风格差异在
+9.5 秒的对比帧里一眼能看出来。
+
+## 修的 bug：cover-badge 路径硬编码
+
+原来写死 `D:/publish/{风格}/02_封面-*.png`。
+
+auto-make 调用时传的是风格名，它就去改 `D:/publish/ganhuoju/` ——
+那是之前手动做的目录，不是 auto-make 的产物
+`D:/publish/hyperframes-ganhuoju/`。
+
+结果：产物封面没角标，旧目录的封面被重复叠了一层。
+
+改成支持 `--pkg` 指定目录，不传沿用旧行为。
+
+## headline 检查改智能
+
+hyperframes 的 headline 是英文（Write HTML. Render video. Built for agents.），
+原来的检查只会说「太长，改 content.json」——对英文项目没用。
+
+改成区分中英文：
+  · 纯英文 → 提示「英文项目做中文视频，得自己写一句中文卖点」，
+    并给两个模板（说清做什么 / 说清给谁）
+  · 中文太长 → 原提示
+
+## 用 --force 的实测结果：验证了检查是对的
+
+绕过检查跑完之后，画面里全是英文：
+  · ajin 的荧光笔高亮在英文段落上
+  · weitu 卡片里是截断的「Write HTML. Rend」
+  · 字幕「With an AI coding agent,」
+
+**中英混杂，不能用。**
+
+这反过来证明 headline 检查该拦 —— --force 只是"我知道后果，继续"的逃生口，
+不是正常路径。
+
+## 结论
+
+英文项目做中文视频，必须人工写中文 headline + features。
+这不是工具能自动解决的：机器翻译抓不住卖点。
+
+ruff All checks passed / 60 测试通过。

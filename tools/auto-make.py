@@ -149,7 +149,26 @@ def main():
         import json as _json
         c0 = _json.loads(cp0.read_text(encoding='utf-8'))
         head = (c0.get('headline') or '').strip()
-        if len(head) > 25:
+        import re as _re
+        has_cn = bool(_re.search(r'[\u4e00-\u9fa5]', head))
+        is_pure_en = not has_cn and len(head) > 0
+
+        need_fix = False
+        if is_pure_en:
+            print()
+            print('  ⚠ headline 是英文：')
+            print(f'    {head}')
+            print()
+            print('    英文项目做中文视频，得自己写一句中文卖点 ——')
+            print('    机器翻译出来是直译，抓不住卖点，所以这里不自动翻。')
+            print()
+            print('    改 content.json 的 headline，参考格式：')
+            print('      "headline": "写 HTML 就出视频"      （13 字，说清做什么）')
+            print('      "headline": "给 Agent 用的视频引擎"  （14 字，说清给谁）')
+            print()
+            print(f'    改完重跑：python tools/auto-make.py {repo} --out {out}')
+            need_fix = True
+        elif len(head) > 25:
             print()
             print(f'  ⚠ headline 太长（{len(head)} 字）：')
             print(f'    {head}')
@@ -157,10 +176,14 @@ def main():
             print('    这是 GitHub description 原文。做视频标题和配音都太长。')
             print('    建议手改 content.json 的 headline 为一句中文卖点（10-20 字）。')
             print(f'    改完重跑：python tools/auto-make.py {repo} --out {out}')
+            need_fix = True
+
+        if need_fix:
             print()
             if not has('--force'):
-                print('    （加 --force 可以跳过这个检查继续）')
+                print('    （加 --force 跳过这个检查继续，做出来的片子标题会很别扭）')
                 sys.exit(2)
+            print('    --force 已指定，继续（标题可能不好看）')
 
     # ── 4. 复制成多条 ──
     if len(styles) > 1:
@@ -238,8 +261,9 @@ def main():
         run([sys.executable, str(KIT / 'tools' / 'make-package.py'), str(d),
              '-o', str(pkg)])
 
-        # 封面上风格角标
-        run([sys.executable, str(KIT / 'tools' / 'cover-badge.py'), s])
+        # 封面上风格角标（必须传 --pkg，否则会改到旧的 D:/publish/{风格}/ 目录）
+        run([sys.executable, str(KIT / 'tools' / 'cover-badge.py'), s,
+             '--pkg', str(pkg)])
         print(f'  → {pkg}')
 
     # ── 最后：preflight ──

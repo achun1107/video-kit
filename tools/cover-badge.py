@@ -76,13 +76,19 @@ def add_badge(path, text, color):
 
 
 def main():
-    only = sys.argv[1] if len(sys.argv) > 1 else None
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    only = args[0] if args else None
+
+    # --pkg 指定发布包目录；不传就用旧的 D:/publish/{风格}
+    pkg_root = sys.argv[sys.argv.index('--pkg') + 1] if '--pkg' in sys.argv else None
+
     for t, (text, color) in STYLES.items():
         if only and only != t:
             continue
         n = 0
         for plat in ['douyin', 'xhs', 'channels', 'bilibili']:
-            p = Path(f'D:/publish/{t}/02_封面-{ {"douyin":"抖音","xhs":"小红书","channels":"视频号","bilibili":"B站"}[plat] }.png')
+            base = Path(pkg_root) if pkg_root else Path(f'D:/publish/{t}')
+            p = base / f'02_封面-{ {"douyin":"抖音","xhs":"小红书","channels":"视频号","bilibili":"B站"}[plat] }.png'
             if not p.exists():
                 continue
             add_badge(p, text, color)
