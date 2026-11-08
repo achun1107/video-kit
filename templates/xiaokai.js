@@ -180,7 +180,10 @@ function card3(fr, lt) {
   const shown = Math.round(star * E.out3(k));
   titleCard(fr, [shown.toLocaleString('en-US'), 'STAR'], 720, Math.min(1, k * 1.5),
             { size: 96, rot: -0.02 });
-  tagBar(fr, 'GitHub 上已经爆火', W / 2, 960, ss(lt, 1.2, 2.0));
+  // 133 星不叫爆火，评论区会打脸。直接说数字更可信
+  const _st = STATS.star;
+  tagBar(fr, _st ? `GitHub 上 ${_st.toLocaleString('en-US')} 星` : 'GitHub 开源项目',
+         W / 2, 960, ss(lt, 1.2, 2.0));
 }
 
 /* ---------- 4 三个特性（参考视频里是竖排大列表）---------- */

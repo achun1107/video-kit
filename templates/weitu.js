@@ -2,7 +2,7 @@
  *
  * 原视频只有 9.47 秒，但它不是录屏 —— 是一张精心设计的「产品发布页」动效：
  *   · 深蓝渐变背景（科技感）
- *   · 顶部胶囊标签「Vercel Labs 开源新作」
+ *   · 顶部胶囊标签「开源项目」（原来写「开源新作」，但这仓库 4 个月前就在更新）
  *   · 超大白色标题
  *   · 蓝色渐变副标题（含 star 数，数字会滚动）
  *   · 灰色一行说明（三个卖点用 · 分隔）
@@ -184,7 +184,7 @@ const HEAD_LINES = (() => {
 /* ---------- 1 标题页 ---------- */
 function card1(fr, lt) {
   // 硬切：第 0 帧就满
-  pill(fr, '开源新作', 300, 1);
+  pill(fr, '开源项目', 300, 1);   // 项目 4 个月前就在更新，不叫新作
 
   const use = HEAD_LINES;
   use.forEach((ln, i) => {
@@ -303,7 +303,7 @@ function card4(fr, lt) {
 function card5(fr, lt) {
   const star = STATS.star;
   const a = ss(lt, 0.1, 1.0);
-  pill(fr, '开源新作', 340, a);
+  pill(fr, '开源项目', 340, a);
 
   if (!star) {
     fr.text('完全开源', W / 2, 620, { font: 'sans', size: 110, color: WHITE, a: ss(lt, 0.3, 1.5) });
