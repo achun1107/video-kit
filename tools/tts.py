@@ -18,6 +18,7 @@
   audio/subs.json     ← 合并后的字幕表，film 直接读
   audio/timeline.json ← 段落起止时间，供 film/mix 用
 """
+import contextlib
 import json
 import re
 import subprocess
@@ -120,6 +121,14 @@ def main():
 
     print()
     print(f'字幕 {len(subs)} 条 → audio/subs.json / subs.js')
+
+    # 自动拆成短视频节奏（每条 8~14 字，1.5 秒左右一条）
+    # 不然重新跑一次 tts 就把之前拆好的字幕覆盖回整句
+    with contextlib.suppress(Exception):
+        subprocess.run(
+            [sys.executable, str(Path(__file__).resolve().parent / 'split-subs.py'),
+             str(proj), '--max', '11'],
+            capture_output=True, timeout=60)
     print(f'配音结束于 {total_end:.2f}s')
     print(f'建议片长 {max(34.8, round(total_end + 1.2, 1))}s')
 
