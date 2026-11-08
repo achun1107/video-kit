@@ -31,7 +31,9 @@ node tools/make-video.mjs --douyin "https://v.douyin.com/xxxxxx/" --out ./my-vid
 
 一条真实产出的片子（讲 [heygen-com/hyperframes](https://github.com/heygen-com/hyperframes)）：
 
-▶ **[看完整成片 demo.mp4（34.8s）](https://github.com/achun1107/video-kit/releases/download/v1.0.0/demo.mp4)**
+▶ **[看完整成片 demo.mp4（34.8s）](https://github.com/achun1107/video-kit/releases/latest/download/demo.mp4)**
+
+> 链接用 `releases/latest`，永远指向最新版的附件，不用跟着发版改。
 
 ---
 
@@ -55,11 +57,18 @@ node tools/make-video.mjs --repo <仓库地址> --out ./out
 ### 自检
 
 ```bash
-npm test              # 60 个测试，覆盖误听纠正、数字解析、SRT 解析、仓库卫生
+npm run selfcheck     # 语法 + 测试 + 死链 + 历史密钥，一条命令
+```
+
+拆开跑：
+
+```bash
+npm test              # 60 个测试：误听纠正、数字解析、SRT 解析、仓库卫生
 npm run check         # Node 脚本语法
-npm run links         # 文档外链体检
-npm run history       # 扫 git 历史里的明文密钥
-npm run fonts         # 下载字体
+npm run links         # 文档外链体检（8 个可达，0 死链）
+npm run history       # git 历史里的明文密钥（0 命中）
+npm run audit         # Python 依赖漏洞（需先 pip install pip-audit）
+npm run fonts         # 下载 14 个字体
 ```
 
 

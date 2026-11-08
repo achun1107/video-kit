@@ -73,3 +73,21 @@ jobs:
           pat='ghp_[A-Za-z0-9]{30,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY'
           if git grep -n -I -E "$pat"; then echo "× 发现疑似密钥"; exit 1; fi
           echo "无密钥"
+
+  audit:
+    name: 依赖审计
+    runs-on: ubuntu-latest
+    # 上游爆出新 CVE 不该阻塞主分支 —— 只提醒，不挂 CI
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: pip-audit
+        run: |
+          pip install --quiet pip-audit
+          pip-audit -r requirements.txt --progress-spinner off
+

@@ -1,25 +1,27 @@
-# Python 依赖
-# 装法：pip install -r requirements.txt
+# Python dependencies
+#   pip install -r requirements.txt
+#
+# Node side has zero runtime dependencies (tools/*.mjs use only the stdlib).
 
-# 渲染
-playwright>=1.40          # Playwright 截帧
-# 装完还要跑一次：python -m playwright install chrome
+# Rendering
+playwright>=1.40          # headless Chrome frame capture
+# after install, run: python -m playwright install chrome
 
-# 配音
-edge-tts>=6.1             # 微软 TTS（联网）
+# Voice
+edge-tts>=6.1             # Microsoft TTS (network required)
 
-# 抖音：本地转写
-faster-whisper>=1.0       # 本地 ASR，替代 whisperx（后者 alignment 模型经常挂）
+# Douyin: local ASR
+faster-whisper>=1.0       # replaces whisperx (its alignment model often fails to load)
 
-# 抖音：关键词提取
-jieba>=0.42               # 中文分词 + TF-IDF
+# Douyin: keyword extraction
+jieba>=0.42               # Chinese segmentation + TF-IDF
 
-# 音频处理
+# Audio
 numpy>=1.26
 scipy>=1.11
 
-# 图片处理（生成 README 图、抽帧排版）
+# Images (README figures, frame tiling)
 pillow>=10.0
 
-# 测试
+# Tests
 pytest>=7.4

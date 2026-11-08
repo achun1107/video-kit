@@ -5,6 +5,7 @@ curl 的 --data-binary 对 8MB 二进制不太稳，用 urllib 直接发。
 """
 import json
 import os
+import sys
 import urllib.request
 import urllib.error
 
@@ -13,7 +14,9 @@ if not TOKEN:
     raise SystemExit('需要 GITHUB_TOKEN')
 
 REPO = 'achun1107/video-kit'
-TAG = 'v1.0.0'
+# --tag v1.0.1 指定；不传就用环境变量 RELEASE_TAG；再不行退回 v1.0.0
+TAG = (sys.argv[sys.argv.index('--tag') + 1] if '--tag' in sys.argv
+       else os.environ.get('RELEASE_TAG', 'v1.0.0'))
 NAME = 'demo.mp4'
 SRC = r'D:\DSH\achun\video-hyperframes\renders\final.mp4'
 

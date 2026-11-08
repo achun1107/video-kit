@@ -164,3 +164,52 @@ python tools/tts.py <工程>
 
 目标场景是抖音/视频号。想改横屏，把 `index.html` 的 `VK_SIZE` 和 canvas CSS 改掉，
 再把 `film.js` 里的 `W`/`H` 相关布局重排。
+
+---
+
+## 自检与维护
+
+### 怎么确认仓库是干净的
+
+`ash
+npm run selfcheck     # 语法 + 测试 + 死链 + 历史密钥，一条命令
+`
+
+分开跑：
+
+`ash
+npm run check         # Node 脚本语法
+npm test              # 60 个单元测试
+npm run links         # 文档外链体检
+npm run history       # git 历史里的明文密钥
+npm run audit         # Python 依赖的已知漏洞（pip-audit）
+`
+
+### 依赖有漏洞怎么办
+
+`ash
+npm run audit
+`
+
+装 pip-audit 才有：
+
+`ash
+pip install pip-audit
+`
+
+报了漏洞就先升对应的包，改 
+equirements.txt 的下限。
+CI 里这一步设了 continue-on-error，上游爆新 CVE 不会挂主分支。
+
+### 历史里有密钥怎么办
+
+`ash
+npm run history
+`
+
+如果有命中：
+
+1. 先轮换那个密钥（不管删不删历史，它都已经泄露过）
+2. 仓库还没公开 → git filter-repo 重写历史
+3. 已经公开 → 删历史没用，别人已经 clone 了，只能轮换
+

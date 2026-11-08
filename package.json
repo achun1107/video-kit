@@ -9,7 +9,9 @@
     "test": "python -m pytest tests/ -q",
     "links": "python tools/check-links.py",
     "history": "python tools/scan-history.py",
+    "audit": "python -m pip_audit -r requirements.txt",
     "fonts": "python engine/get_fonts.py",
+    "selfcheck": "npm run check && npm test && npm run links && npm run history",
     "demo": "node tools/make-video.mjs --repo https://github.com/achun1107/video-kit --out ./out"
   },
   "engines": {
