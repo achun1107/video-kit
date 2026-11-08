@@ -1,0 +1,64 @@
+feat: 英文项目也能出片（facts 文案骨架）
+
+## 问题
+
+上轮用 heygen-com/hyperframes（10 分项目）测 4 条分支，
+headline 是英文 → 检查拦停。
+
+绕过之后硬跑，画面中英混杂：
+荧光笔高亮在英文段落上，字幕是「With an AI coding agent,」——不能用。
+
+而大多数热门仓库是英文的。停下来等于这个项目做不了。
+
+## 解法：facts 骨架
+
+不说项目讲了什么，只说**不需要理解的事实**：
+
+  80,978 星的 TypeScript 项目。它叫 hyperframes。
+  代码全部公开，有在线 Demo。7,475 个 fork，
+  2026 年 03 月开始建库，最近一次更新在 2026-11-08。
+  搜 hyperframes 就能找到，免费。
+
+全是 GitHub API 直接给的，不需要翻译、不会撒谎。
+TTS 念中文串着英文项目名很自然。
+
+浅，但能听、不混杂。
+
+## auto-make 自动决策
+
+  headline 纯英文        → facts 风格，继续做
+  headline 中文且 >25 字  → 仍拦停（这个能修，改一下就行）
+  headline 中文且短       → 正常走
+
+## 踩的四个坑
+
+1. facts 的 feat 模板用了 {demo}，但调用只传了 items
+   → KeyError: 'demo'。改成传全部变量。
+
+2. scene 那句只 append 没 format
+   → 生成出来是「{fork} 个 fork，{age}开始建库」
+
+3. 字段名不一致（这个最隐蔽）
+   content.json 里 stats.fork = 7475，但顶层 forks = None。
+   repo-content.py 写 stats.fork，script-writer 读顶层 forks。
+   结果文案是「若干 个 fork，之前开始建库，最近一次更新在近期」——
+   全是占位词。
+
+   改：script-writer 两种写法都兼容；
+       repo-content.py 补写 created / pushed / forks 三个顶层字段。
+
+4. 画面上的特性还是英文
+   facts 只管配音，画面 features 是 `Quick Start` / `AI coding agent`。
+   英文项目时清空 features，各模板降级到中文通用词或跳过。
+
+## 实测
+
+facts 文案：102 字（在 preflight 要求的 80-160 区间内）
+四条渲染：各 34.8s
+
+## 遇到限流
+
+GitHub API 403 rate limit exceeded —— token 额度用完了。
+repo-content.py 补字段那段没能实测，但逻辑是直接的 repo.get() 映射。
+
+ruff All checks passed / 60 测试通过。

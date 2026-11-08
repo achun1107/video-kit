@@ -113,6 +113,10 @@ def main():
         'lang': repo.get('language') or '',
         'license': (repo.get('license') or {}).get('spdx_id') or '',
         'homepage': repo.get('homepage') or '',
+        # 建库 / 最近更新时间 —— facts 文案要用
+        'created': (repo.get('created_at') or '')[:10],
+        'pushed': (repo.get('pushed_at') or '')[:10],
+        'forks': repo.get('forks_count', 0),
     }
 
     # headline 如果是纯英文，念出来很怪（TTS 会一个词一个词念）。

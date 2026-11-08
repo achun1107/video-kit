@@ -82,6 +82,18 @@ STYLE_BONES = {
         'data': '现在 {star} 星，还比较冷门。',
         'close': '想看的搜仓库名，免费的。',
     },
+    # 事实型：不说项目讲了什么，只说不需要理解的事实。
+    # 英文项目专用 —— 没有中文 description 也能出片，
+    # 而且不会中英混杂。
+    'facts': {
+        'hook': '{star} 星的 {lang} 项目。',
+        'open': '它叫 {name}。',
+        'feat': '代码全部公开，{demo}。',
+        'scene': '{fork} 个 fork，{age}开始建库，最近一次更新在{pushed}。',
+        'data': '',
+        'close': '搜 {name} 就能找到，免费。',
+    },
+
     # 问题切入：先说观众自己的痛点，再说解法。
     # 低星项目必须这么讲 —— 讲"有个开源项目"没人关心，
     # 讲"你是不是也遇到过"才有共鸣。
@@ -137,14 +149,35 @@ def styled_script(c, style):
     head_s = head.rstrip('。') if head else '一个开源项目'
     star_s = f'{star:,}' if star else '几百'
 
+    # facts 骨架用的事实变量
+    # 注意字段名：repo-content.py 把 fork 数写在 stats.fork，
+    # 顶层没有 forks。两种都兼容。
+    _stats = c.get('stats') or {}
+    _forks = c.get('forks') or _stats.get('fork') or _stats.get('forks')
+    _created = c.get('created') or (_stats.get('created') if isinstance(_stats, dict) else None)
+    _pushed = c.get('pushed') or (_stats.get('pushed') if isinstance(_stats, dict) else None)
+
+    lang_s = c.get('lang') or '开源'
+    demo_s = '有在线 Demo' if c.get('homepage') else '装上就能用'
+    fork_s = f'{_forks:,}' if _forks else '若干'
+    if _created:
+        _y, _m = _created[:7].split('-')
+        age_s = f'{_y} 年 {_m} 月'
+    else:
+        age_s = '之前'
+    pushed_s = (_pushed or '')[:10] or '近期'
+
+    kw = {'name': name, 'head': head_s, 'star': star_s,
+          'lang': lang_s, 'demo': demo_s,
+          'fork': fork_s, 'age': age_s, 'pushed': pushed_s}
     p1 = [
-        bone['hook'] + ('' if bone['hook'][-1] in '。？！' else '。'),
-        bone['open'].format(name=name, head=head_s),
+        bone['hook'].format(**kw) + ('' if bone['hook'][-1] in '。？！' else '。'),
+        bone['open'].format(**kw),
     ]
     if items:
-        p1.append(bone['feat'].format(items=items_s))
+        p1.append(bone['feat'].format(items=items_s, **kw))
     if bone.get('scene'):
-        p1.append(bone['scene'])
+        p1.append(bone['scene'].format(**kw))
     if star:
         p1.append(bone['data'].format(star=star_s))
 

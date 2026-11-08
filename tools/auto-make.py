@@ -142,6 +142,22 @@ def main():
         sys.exit('生成工程失败：\n' + (r.stderr or '')[-600:])
     print(f'  {out}')
 
+    # ── 3.4 英文项目：清空 features ──
+    # 英文项目的 features 是 Quick Start / AI coding agent 这类，
+    # 放到画面上就是英文段落，和中文配音打架。
+    # 清空后各模板会降级到中文通用词或直接跳过。
+    cp_en = out / 'content.json'
+    if cp_en.exists():
+        import json as _j
+        _ce = _j.loads(cp_en.read_text(encoding='utf-8'))
+        _h = (_ce.get('headline') or '').strip()
+        import re as _r
+        if _h and not _r.search(r'[\u4e00-\u9fa5]', _h):
+            _ce['features'] = []
+            cp_en.write_text(_j.dumps(_ce, ensure_ascii=False, indent=2), encoding='utf-8')
+            run([sys.executable, str(KIT / 'tools' / 'sync-content.py'), str(out)])
+            print('  英文项目：features 已清空（画面不会出现英文特性）')
+
     # ── 3.5 检查 headline 长度 ──
     # content.json 的 headline 来自 GitHub description，可能很长
     cp0 = out / 'content.json'
@@ -154,20 +170,15 @@ def main():
         is_pure_en = not has_cn and len(head) > 0
 
         need_fix = False
+        use_facts = False
         if is_pure_en:
+            # 英文项目不拦停 —— 改用事实型文案，只说不需要理解的事实
+            use_facts = True
             print()
-            print('  ⚠ headline 是英文：')
+            print('  ℹ headline 是英文，改用事实型文案')
             print(f'    {head}')
-            print()
-            print('    英文项目做中文视频，得自己写一句中文卖点 ——')
-            print('    机器翻译出来是直译，抓不住卖点，所以这里不自动翻。')
-            print()
-            print('    改 content.json 的 headline，参考格式：')
-            print('      "headline": "写 HTML 就出视频"      （13 字，说清做什么）')
-            print('      "headline": "给 Agent 用的视频引擎"  （14 字，说清给谁）')
-            print()
-            print(f'    改完重跑：python tools/auto-make.py {repo} --out {out}')
-            need_fix = True
+            print('    （只说星数/技术栈/建库时间这些不需要翻译的事实）')
+            print('    想要更好的效果，手改 content.json 的 headline 为一句中文卖点。')
         elif len(head) > 25:
             print()
             print(f'  ⚠ headline 太长（{len(head)} 字）：')
@@ -202,8 +213,16 @@ def main():
         step(i, f'{s}：文案 → 配音 → 渲染 → 混音 → 打包')
         tpl, voice, bgm, rate = STYLES[s]
 
-        # 文案（用问题切入的风格，低星项目更需要）
-        tpl_style = 'problem' if (score is None or score < 7) else s
+        # 文案风格：
+        #   英文项目 → facts（只说事实，不中英混杂）
+        #   低分项目 → problem（先说观众痛点）
+        #   高分项目 → 各自的风格
+        if use_facts:
+            tpl_style = 'facts'
+        elif score is None or score < 7:
+            tpl_style = 'problem'
+        else:
+            tpl_style = s
         run([sys.executable, str(KIT / 'tools' / 'script-writer.py'), str(d),
              '--tpl-style', tpl_style, '--style', 'styled'])
 
