@@ -82,6 +82,17 @@ STYLE_BONES = {
         'data': '现在 {star} 星，还比较冷门。',
         'close': '想看的搜仓库名，免费的。',
     },
+    # 问题切入：先说观众自己的痛点，再说解法。
+    # 低星项目必须这么讲 —— 讲"有个开源项目"没人关心，
+    # 讲"你是不是也遇到过"才有共鸣。
+    'problem': {
+        'hook': '想用 AI 干活，但一打开命令行就懵了？',
+        'open': '有人做了个东西叫 {name}，就是解决这个的：{head}。',
+        'feat': '它把这几个门槛都拆掉了：{items}。',
+        'data': '现在只有 {star} 星，知道的人还不多。',
+        'close': '搜 {name} 就能找到，免费。',
+    },
+
     # 产品语气：像发布会介绍
     # 字数要够（配音撑满 34.8 秒），所以多两句：适用场景 + 门槛
     'weitu': {
@@ -127,7 +138,7 @@ def styled_script(c, style):
     star_s = f'{star:,}' if star else '几百'
 
     p1 = [
-        bone['hook'] + '。',
+        bone['hook'] + ('' if bone['hook'][-1] in '。？！' else '。'),
         bone['open'].format(name=name, head=head_s),
     ]
     if items:
