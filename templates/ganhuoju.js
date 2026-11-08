@@ -261,10 +261,10 @@ function subtitles(fr, t) {
   const size = Math.min(52, Math.round(860 / (vw * 1.0)));
 
   // 垫一条深色带，浅色截图上字幕才不糊
-  fr.rect(W / 2 - 480, 1640 - size * 0.9, 960, size * 1.8, {
+  fr.rect(W / 2 - 480, 1330 - size * 0.9, 960, size * 1.8, {
     fill: '#000000', a: a * 0.6,
   });
-  fr.text(s.zh, W / 2, 1640, {
+  fr.text(s.zh, W / 2, 1330, {
     font: 'sans', size, color: '#FFFFFF', a,
     shadow: 0.95, shadowBlur: 10,
   });

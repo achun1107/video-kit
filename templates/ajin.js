@@ -214,10 +214,10 @@ function subtitles(fr, t) {
     (n, ch) => n + (/[\u4e00-\u9fff]/.test(ch) ? 1 : (ch === ' ' ? 0.3 : 0.56)), 0);
   const size = Math.min(54, Math.round(860 / (vw * 1.0)));
 
-  fr.rect(W / 2 - 480, 1620 - size * 0.9, 960, size * 1.8, {
+  fr.rect(W / 2 - 480, 1330 - size * 0.9, 960, size * 1.8, {
     fill: '#000000', a: a * 0.6,
   });
-  fr.text(s.zh, W / 2, 1620, {
+  fr.text(s.zh, W / 2, 1330, {
     font: 'sans', size, color: '#FFFFFF', a,
     shadow: 0.95, shadowBlur: 10,
   });
