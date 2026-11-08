@@ -39,29 +39,59 @@ function timecode(t) {
   return `${pad2(m)}:${pad2(s2)}.${String(ms).padStart(3, '0')}`;
 }
 
-/* 超大黄色手写感：四层叠（黑描边上下左右 + 黄字），模仿马克笔 */
+/* 超大黄色手写感：逐字随机倾斜 + 黑描边，模仿真人马克笔批注
+ *
+ * 为什么要逐字：整行一起旋转看起来像"排版歪了"，不像手写。
+ * 真人写字每个字角度都差一点。角度用 hash(i) 取，保证 --det 通过。
+ */
 function scrawl(fr, text, x, y, size, a, o) {
   o = o || {};
   if (a <= 0.003) return;
-  const rot = o.rot == null ? -0.04 : o.rot;
-  const ctx = fr.x;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(rot);
 
-  // 描边：四个方向各画一次黑字，制造粗描边
-  const off = Math.max(1.5, size * 0.022);   // 手写体笔画细，描边收窄，不然糊成一团
+  const chars = Array.from(text);
+  if (!chars.length) return;
+
+  const off = Math.max(1.2, size * 0.020);   // 手写体笔画细，描边收窄
   const dirs = [[-off, 0], [off, 0], [0, -off], [0, off]];
-  for (const [dx, dy] of dirs) {
-    fr.text(text, dx, dy, {
-      font: 'hand', size, color: '#000000', a: a * 0.95, align: o.align || 'c',
+  const ctx = fr.x;
+
+  // 先量每个字的宽度，算总宽和起始位置
+  const widths = chars.map(ch => fr.measure(ch, { font: 'hand', size }));
+  const total = widths.reduce((p, c) => p + c, 0);
+  const align = o.align || 'c';
+  let cx = align === 'l' ? x : (align === 'r' ? x - total : x - total / 2);
+
+  const baseRot = o.rot == null ? -0.03 : o.rot;
+
+  chars.forEach((ch, i) => {
+    const w = widths[i];
+    const mx = cx + w / 2;
+
+    // 逐字角度：基础倾斜 + 每字 ±2.5° 的随机偏移
+    const jitter = (hash(i * 7.3 + 2.1) - 0.5) * 0.09;
+    const rot = baseRot + jitter;
+
+    // 逐字垂直微抖（真人写字基线也会飘）
+    const dy = (hash(i * 3.7 + 9.4) - 0.5) * size * 0.045;
+
+    ctx.save();
+    ctx.translate(mx, y + dy);
+    ctx.rotate(rot);
+
+    // 描边
+    for (const [dx, dyy] of dirs) {
+      fr.text(ch, dx, dyy, {
+        font: 'hand', size, color: '#000000', a: a * 0.95, align: 'c',
+      });
+    }
+    // 主体
+    fr.text(ch, 0, 0, {
+      font: 'hand', size, color: o.color || YELLOW, a, align: 'c',
     });
-  }
-  // 黄字主体
-  fr.text(text, 0, 0, {
-    font: 'hand', size, color: o.color || YELLOW, a, align: o.align || 'c',
+    ctx.restore();
+
+    cx += w;
   });
-  ctx.restore();
 }
 
 /* 截图铺底，统一压暗 */
