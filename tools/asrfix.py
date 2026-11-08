@@ -46,6 +46,8 @@ NAME_FIX = {
     'agent lightning': 'Agent Lightning',
     'microsoft': 'Microsoft',
     'mcp': 'MCP',
+    '行标': 'star',
+    '新标': 'star',
 
     # 公司 / 品牌
     '温软': '微软',
@@ -62,6 +64,7 @@ NAME_FIX = {
     # 通用词
     '冬孝': '动画',
     '动效': '动效',
+    '主秒分镜': '分镜',
     '主秒': '分镜',
     '分镜': '分镜',
     '一战士': '一站式',

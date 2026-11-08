@@ -115,6 +115,15 @@ def main():
         'homepage': repo.get('homepage') or '',
     }
 
+    # headline 如果是纯英文，念出来很怪（TTS 会一个词一个词念）。
+    # 这里只提示，不自动翻译 —— 翻译需要人判断哪个词是卖点。
+    import re as _re
+    if data['headline'] and not _re.search(r'[\u4e00-\u9fa5]', data['headline']):
+        print()
+        print('  ⚠ headline 是英文：' + data['headline'])
+        print('    配音会把每个英文词单独念出来，听着别扭。')
+        print('    建议在 content.json 里手改 headline 为一句中文卖点。')
+
     out.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
     print(f'✓ {out}')
     print(f'  {data["namePlain"]}  [{data["stats"]["star"]} star / {data["stats"]["fork"]} fork]')

@@ -23,6 +23,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from asrfix import fix_text
+
 
 def arg(n, d=None):
     return sys.argv[sys.argv.index(n) + 1] if n in sys.argv else d
@@ -91,10 +94,16 @@ def template_script(c):
 # ────────────────────────── 参考稿 ──────────────────────────
 
 def reference_script(c, asr):
-    """借原片的节奏，换主语。
+    """从原片转写里抽话术骨架，换主语。
 
-    原片转写是按句切好的（segments），我们把前半段（讲"是什么"）
-    映射到 vo1，后半段（讲"怎么用/结论"）映射到 vo2。
+    为什么这么做：原片的文案是别人验证过能留住人的，它的**句子顺序、
+    信息密度、钩子位置**比模板套话值钱。我们要的是这个骨架，
+    内容（名字、功能、数字）换成目标仓库的。
+
+    三步：
+      1. 挑信息量大的句子（含数字 / 含功能动词 / 不是纯语气）
+      2. 把原片专名换成目标项目名
+      3. 按目标字数取舍（vo1 约 20 秒，vo2 约 11 秒）
     """
     name = c.get('namePlain') or c.get('name') or '这个项目'
     head = (c.get('headline') or '').strip()
@@ -107,47 +116,119 @@ def reference_script(c, asr):
     if not segs:
         return None
 
-    # 原片的总时长和语速
     total = segs[-1].get('end', 0) or 0
     chars = asr.get('chars') or cn_len(full)
     rate = asr.get('rate') or (chars / max(total, .1))
+    cap1 = int(rate * 20)
+    cap2 = int(rate * 12)
 
-    # 原片前 3 句的句式，用来起头（保留节奏感，去掉具体名词）
-    opener = segs[0].get('text', '') if segs else ''
-    opener = re.sub(r'Codex|GPT|Skill|skills|AI', '', opener, flags=re.I).strip('，。 ')
+    # ── 1. 挑句子 ──
+    # 哪些算「信息量大」：带数字、带功能动词、长度 12-40 字
+    FUNC_WORDS = ('装上', '装上', '生成', '自动', '接管', '批量', '支持', '适合',
+                  '专门', '直接', '不用', '只要', '就能', '一句话', '开源', '免费')
+    BORING = ('不知道', '怎么玩', '厉害', '真正')
 
+    def info_score(t):
+        sc = 0
+        if re.search(r'\d', t):
+            sc += 3
+        for w in FUNC_WORDS:
+            if w in t:
+                sc += 2
+        if any(b in t for b in BORING):
+            sc -= 2
+        n = len(re.sub(r'\s', '', t))
+        if 12 <= n <= 40:
+            sc += 2
+        elif n < 8:
+            sc -= 3
+        return sc
+
+    scored = [(info_score(sg.get('text', '')), sg) for sg in segs]
+    scored.sort(key=lambda x: -x[0])
+
+    # ── 2. 换专名 ──
+    # 原片里的项目名/工具名要换成目标项目名，否则文案会串
+    ORIGINAL_NAMES = re.compile(
+        r'Codex|ChatGPT|GPT|HyperFrames|Happy Frames|Remotion|video-use|Videos|'
+        r'Seedance|Cdass2|Video Cut|Videocat|Generative Media|'
+        r'(?:这个|那个)?(?:skill|skills)|插件|工具包',
+        re.I,
+    )
+
+    def swap(t):
+        # 先纠正 whisper 的误听（冬孝→动画、主秒→分镜…），
+        # 再去掉原片专名，避免念出来是错的
+        t = fix_text(t or '')
+        t = ORIGINAL_NAMES.sub('', t)
+        t = re.sub(r'\s+', '', t)
+        # 替换后可能粘连出重复词（主秒分镜 → 分镜分镜），去一次
+        t = re.sub(r'(.{2,4})\1', r'\1', t)
+        return t.strip('，。、；：')
+
+    # ── 3. 组 vo1 ──
     p1 = []
-    if opener and len(opener) > 4:
-        p1.append(opener.rstrip('，。') + '？')
+
+    # 钩子：优先用原片第一句（去掉专名后），否则用数字/卖点造一个
+    opener = swap(segs[0].get('text', ''))
+    if len(opener) >= 6 and info_score(opener) > -2:
+        p1.append(opener.rstrip('？?!！') + '？')
+    elif star and star > 10000:
+        p1.append(f'{star:,} 星的开源项目，你还没用过？')
+    elif head:
+        p1.append(f'{head.rstrip("。")}，这个开源项目值得看看。')
     else:
         p1.append('这个开源项目值得看看。')
 
+    # 主体：项目名 + 一句话
     if head:
         p1.append(f'{name}，{head.rstrip("。")}。')
     elif tag:
         p1.append(f'{name}，{tag.rstrip("。")}。')
 
+    # 从原片补句子直到够字数（跳过已经很短的钩子）
+    for _sc, sg in scored:
+        if sum(cn_len(x) for x in p1) >= cap1 - 20:
+            break
+        t = swap(sg.get('text', ''))
+        if len(t) < 8:
+            continue
+        # 已经说过的意思不重复
+        if any(t[:6] in x for x in p1):
+            continue
+        p1.append(t + '。')
+
+    # 还不够就上 content.json 的特性
     feats = c.get('features') or []
-    titles = []
-    for f in feats[:3]:
-        t = f.get('title') if isinstance(f, dict) else str(f)
-        if t:
-            titles.append(t.rstrip('。'))
-    if titles:
+    titles = [f.get('title') if isinstance(f, dict) else str(f) for f in feats[:3]]
+    titles = [t.rstrip('。') for t in titles if t]
+    if titles and sum(cn_len(x) for x in p1) < cap1 - 10:
         p1.append('上手就有这些：' + '、'.join(titles) + '。')
 
-    if star:
-        p1.append(f'{star:,} 个 star，全部开源。')
+    if star and sum(cn_len(x) for x in p1) < cap1 - 10:
+        p1.append(f'GitHub 上 {star:,} 个 star，代码全部公开。')
 
-    cap = int(rate * 20)   # vo1 目标 20 秒
-    vo1 = ''.join(p1)[:cap]
+    vo1 = ''.join(p1)[:cap1]
 
+    # ── 4. 组 vo2 ──
     p2 = []
     concl = c.get('conclusion') or []
     if concl:
         p2.append('一句话总结：' + '，'.join(str(x) for x in concl[:3]) + '。')
-    p2.append(f'仓库搜 {name}，装好就能用。')
-    vo2 = ''.join(p2)[:int(rate * 11)]
+
+    # 原片后段的句子（讲怎么用/结论的）
+    tail = sorted(segs, key=lambda sg: sg.get('start', 0))[-3:]
+    for sg in tail:
+        if sum(cn_len(x) for x in p2) >= cap2 - 15:
+            break
+        t = swap(sg.get('text', ''))
+        if len(t) >= 8 and not any(t[:6] in x for x in p2):
+            p2.append(t + '。')
+
+    if sum(cn_len(x) for x in p2) < cap2 - 10:
+        p2.append(f'仓库搜 {name}，装好就能用。')
+
+    vo2 = ''.join(p2)[:cap2]
 
     return {'vo1': vo1, 'vo2': vo2}
 

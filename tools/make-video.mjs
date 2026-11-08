@@ -35,6 +35,7 @@ const has = n => process.argv.includes(n);
 
 const repoArg = arg('--repo');
 const douyinInput = arg('--douyin');
+let douyinAsr = null;   // 抖音流程的转写结果，用来生成参考稿
 if (!repoArg && !douyinInput) {
   console.error('用法:');
   console.error('  node tools/make-video.mjs --repo <github url|本地目录> --out <工程目录>');
@@ -207,6 +208,8 @@ if (douyinArg) {
     resolved.title = pick.title;
   }
   if (repoFromVideo) repoArgFinal = repoFromVideo;
+  // 把转写路径存到外层，等 content.json 生成后再用它写参考稿
+  if (asrJson) douyinAsr = asrJson;
 
   // 5) 用 API 直接生成 content.json（大仓库 clone 会超时）
   if (!has('--repo') || repoFromVideo) {
@@ -278,6 +281,18 @@ try {
 }
 
 /* ══ 4-5. 配音 + 字幕 ══ */
+/* 有抖音转写时先写参考稿 —— 借原片的话术骨架，比模板稿信息密度高得多。
+ * 必须在 content.json 生成之后（第 2 步）、配音之前（第 4 步）。 */
+if (douyinAsr && existsSync(douyinAsr)) {
+  try {
+    run(PY, [join(KIT, 'tools', 'script-writer.py'), out,
+             '--from-asr', douyinAsr, '--style', 'reference']);
+    console.log('  ✓ 已用原片话术生成参考稿（建议看一遍再出片）');
+  } catch {
+    console.log('  参考稿生成失败，退回模板稿');
+  }
+}
+
 step(4, '生成配音与字幕');
 const copyPath = join(out, 'audio', 'copy.json');
 if (!existsSync(copyPath)) {
