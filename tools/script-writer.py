@@ -39,6 +39,14 @@ def cn_len(s):
     return len(clean(s))
 
 
+# 受众句式：这些是「适合谁」，不是「能做什么」。
+# 念进配音里会文不对题（「它主要能做这几件事：给真人、给不想花钱的人」）。
+AUDIENCE_RE = re.compile(
+    r'^(给|适合|面向|针对)'
+    r'|.*(的人|用户|同学|新手|小白)$'
+)
+
+
 # ────────────────────────── 模板稿 ──────────────────────────
 
 HOOKS = [
@@ -47,6 +55,91 @@ HOOKS = [
     '如果你也在用 AI 干活，这个别错过。',
     '又发现一个能省时间的东西。',
 ]
+
+# 四种风格的文案骨架。同一项目用不同骨架，音频才不会撞。
+STYLE_BONES = {
+    # 教学语气：先承认"这是个什么东西"，再带看
+    'ajin': {
+        'hook': '今天带你看一个开源项目',
+        'open': '{name}，{head}。',
+        'feat': '它主要能做这几件事：{items}。',
+        'data': 'GitHub 上已经有 {star} 个 star，代码全部公开。',
+        'close': '想试的话，搜 {name} 就能找到，装上就能用。',
+    },
+    # 划重点语气：先说结论，再展开
+    'ganhuoju': {
+        'hook': '先说结论',
+        'open': '这个叫 {name} 的项目，{head}。',
+        'feat': '重点在这几块：{items}。',
+        'data': '{star} 星，不算多，但能用的东西都齐了。',
+        'close': '仓库名我放在最后，自己去搜。',
+    },
+    # 推荐语气：像在跟朋友分享
+    'xiaokai': {
+        'hook': '又挖到一个宝藏开源项目',
+        'open': '{name}，一句话概括就是：{head}。',
+        'feat': '我自己觉得最有用的三个点：{items}。',
+        'data': '现在 {star} 星，还比较冷门。',
+        'close': '想看的搜仓库名，免费的。',
+    },
+    # 产品语气：像发布会介绍
+    'weitu': {
+        'hook': '刚开源',
+        'open': '{name}，{head}。',
+        'feat': '核心能力：{items}。',
+        'data': '上线不久已经 {star} 星。',
+        'close': '支持多平台，装好就能跑。',
+    },
+}
+
+
+def styled_script(c, style):
+    """按风格骨架生成文案。没有对应风格就往回退到通用模板。"""
+    bone = STYLE_BONES.get(style)
+    if not bone:
+        return None
+
+    name = c.get('namePlain') or c.get('name') or '这个项目'
+    head = (c.get('headline') or '').strip()
+    stats = c.get('stats') or {}
+    star = stats.get('star')
+    feats = c.get('features') or []
+    concl = c.get('conclusion') or []
+
+    # 过滤受众描述：「给真人（小白）」「给不想花钱的人」这类是「适合谁」，
+    # 不是「能做什么」，念出来文不对题
+    items = []
+    for f in feats:
+        t = f.get('title') if isinstance(f, dict) else str(f)
+        t = str(t or '').strip().rstrip('。')
+        if not t or len(t) < 4:
+            continue
+        if AUDIENCE_RE.match(t):
+            continue
+        items.append(t)
+        if len(items) >= 3:
+            break
+    items_s = '、'.join(items) if items else ''
+
+    head_s = head.rstrip('。') if head else '一个开源项目'
+    star_s = f'{star:,}' if star else '几百'
+
+    p1 = [
+        bone['hook'] + '。',
+        bone['open'].format(name=name, head=head_s),
+    ]
+    if items:
+        p1.append(bone['feat'].format(items=items_s))
+    if star:
+        p1.append(bone['data'].format(star=star_s))
+
+    p2 = []
+    if concl:
+        p2.append('总结：' + '，'.join(str(x) for x in concl[:3]) + '。')
+    p2.append(bone['close'].format(name=name))
+
+    return {'vo1': ''.join(p1), 'vo2': ''.join(p2)}
+
 
 def template_script(c):
     name = c.get('namePlain') or c.get('name') or '这个项目'
@@ -242,11 +335,19 @@ def main():
     c = json.loads(content_path.read_text(encoding='utf-8'))
     asr_path = arg('--from-asr')
     style = arg('--style', 'template')
+    tpl_style = arg('--tpl-style')      # 视频风格，决定文案骨架
 
     variants = {}
 
     tpl = template_script(c)
     variants['template'] = tpl
+
+    # 风格化文案：四条片子同一个项目，文案必须不同，
+    # 否则音频指纹一样，平台判重复内容
+    if tpl_style:
+        styled = styled_script(c, tpl_style)
+        if styled:
+            variants['styled'] = styled
 
     if asr_path and Path(asr_path).exists():
         asr = json.loads(Path(asr_path).read_text(encoding='utf-8'))
