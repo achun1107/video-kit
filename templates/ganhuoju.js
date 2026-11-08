@@ -208,7 +208,7 @@ function card2(fr, lt) {
 /* ---------- 3 最厉害的地方 ---------- */
 function card3(fr, lt) {
   bed(fr, IMG, 0.64, 1 + 0.06 * Math.min(1, lt / 4.4));
-  scrawl(fr, '这款工具最厉害的地方', W / 2, 720, 84, 1, { rot: -0.03 });
+  scrawl(fr, '它到底能干什么', W / 2, 720, 84, 1, { rot: -0.03 });
   if (HEAD) {
     // 按字数分行 + 字号随行长自适应（原来 slice(0,12) 会把「搞定一切」切掉）
     const chars = Array.from(HEAD);
@@ -228,15 +228,45 @@ function card3(fr, lt) {
 /* ---------- 4 场景：不管怎么变 ---------- */
 function card4(fr, lt) {
   bed(fr, IMG, 0.66, 1 + 0.06 * Math.min(1, lt / 4.4));
-  scrawl(fr, '不管怎么变', W / 2, 700, 110, 1, { rot: -0.05 });
-  scrawl(fr, '它都能自动适配', W / 2, 900, 96, ss(lt, 0.6, 1.6), { rot: 0.035 });
+  // 从 features[1] 读，不再写死「不管怎么变都能自动适配」
+  const f = FEATURES[1];
+  const t = String((typeof f === 'string') ? f : (f && (f.title || f.name)) || '');
+  scrawl(fr, '第二个亮点', W / 2, 700, 84, 1, { rot: -0.05 });
+  if (t) {
+    const chars = Array.from(t);
+    const per = Math.min(11, Math.ceil(chars.length / 2));
+    const rows = [];
+    for (let i = 0; i < chars.length; i += per) {
+      rows.push(chars.slice(i, i + per).join(''));
+    }
+    rows.slice(0, 2).forEach((r, i) => {
+      const size = r.length >= 10 ? 72 : 86;
+      scrawl(fr, r, W / 2, 880 + i * 110, size,
+             ss(lt, 0.5 + i * 0.25, 1.5 + i * 0.25), { rot: 0.035 });
+    });
+  }
 }
 
 /* ---------- 5 降门槛 ---------- */
 function card5(fr, lt) {
   bed(fr, IMG, 0.62, 1 + 0.06 * Math.min(1, lt / 4.4));
-  scrawl(fr, '全程不用改代码', W / 2, 740, 100, 1, { rot: -0.04 });
-  scrawl(fr, '新手也能上手', W / 2, 920, 88, ss(lt, 0.55, 1.5), { rot: 0.03 });
+  // 从 features[2] 读，不再写死「全程不用改代码」
+  const f = FEATURES[2];
+  const t = String((typeof f === 'string') ? f : (f && (f.title || f.name)) || '');
+  scrawl(fr, '第三个亮点', W / 2, 720, 84, 1, { rot: -0.04 });
+  if (t) {
+    const chars = Array.from(t);
+    const per = Math.min(11, Math.ceil(chars.length / 2));
+    const rows = [];
+    for (let i = 0; i < chars.length; i += per) {
+      rows.push(chars.slice(i, i + per).join(''));
+    }
+    rows.slice(0, 2).forEach((r, i) => {
+      const size = r.length >= 10 ? 72 : 86;
+      scrawl(fr, r, W / 2, 890 + i * 110, size,
+             ss(lt, 0.5 + i * 0.25, 1.5 + i * 0.25), { rot: 0.03 });
+    });
+  }
 }
 
 /* ---------- 6 结论 ---------- */

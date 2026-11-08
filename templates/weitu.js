@@ -144,7 +144,10 @@ function featureCard(fr, x, y, w, h, title, desc, tag, a, col) {
     fr.text(tag, x + w - tw / 2 - 16, y + 36, { font: 'sans', size: 16, color: col || BLUE, a });
   }
 
-  fr.text(title, x + 20, y + 92, { font: 'sans', size: 30, color: WHITE, a, align: 'l' });
+  // 字号按字数直接算（fr.measure 在这里不准，量出来偏小导致溢出）
+  const nch = Array.from(title).length;
+  const tsize = Math.max(16, Math.min(30, Math.floor((w - 44) / Math.max(nch, 1))));
+  fr.text(title, x + 20, y + 92, { font: 'sans', size: tsize, color: WHITE, a, align: 'l' });
   if (desc) {
     fr.text(desc.slice(0, 14), x + 20, y + 134, { font: 'sans', size: 19, color: GRAY, a, align: 'l' });
   }
@@ -246,29 +249,34 @@ function card2(fr, lt) {
 
 /* ---------- 3 代码示例 ---------- */
 function card3(fr, lt) {
-  const a = ss(lt, 0.1, 0.9);
-  const w = 880, h = 520, x = (W - w) / 2, y = 380;
+  // 不再画假代码块 —— 原来那两段 `$ tool snapshot` 是 Agent Desktop 的，
+  // 小百看板没有 CLI。观众搜不到会取关。
+  const a = 1;
+  const w = 880, h = 460, x = (W - w) / 2, y = 400;
 
-  macWindow(fr, x, y, w, h, a, { title: '两种接入方式' });
+  macWindow(fr, x, y, w, h, a, { title: '它能做什么' });
 
-  fr.text('命令行调用', x + 44, y + 90, {
-    font: 'sans', size: 28, color: WHITE, a: ss(lt, 0.5, 1.2), align: 'l',
+  const list = FEATURES.slice(0, 3).map(f =>
+    String((typeof f === 'string') ? f : (f.title || f.name || '')));
+
+  list.forEach((t, i2) => {
+    const aa = i2 === 0 ? 1 : ss(lt, 0.4 + i2 * 0.5, 0.4 + i2 * 0.5 + 0.9);
+    if (aa <= 0.003) return;
+    const ty = y + 100 + i2 * 108;
+
+    // 序号
+    fr.text('0' + (i2 + 1), x + 48, ty, {
+      font: 'mono', size: 26, color: BLUE, a: aa * 0.85, align: 'l',
+    });
+    // 能力文字（按宽度缩）
+    let size = 34;
+    while (size > 20 && fr.measure(t, { font: 'sans', size }) > w - 150) size -= 2;
+    fr.text(t, x + 110, ty, {
+      font: 'sans', size, color: '#D8E4F0', a: aa, align: 'l',
+    });
+    // 分隔线
+    fr.rect(x + 48, ty + 34, w - 96, 1, { fill: '#2E4258', a: aa * 0.6 });
   });
-
-  const lines = [
-    '$ ' + (REPO.split('/')[1] || 'tool') + ' snapshot',
-    '$ ' + (REPO.split('/')[1] || 'tool') + ' click @btn_3',
-    '  → clicked "确定"',
-  ];
-  codeBlock(fr, x + 44, y + 130, w - 88, 150, lines, ss(lt, 0.8, 2.0));
-
-  fr.text('进程内调用', x + 44, y + 320, {
-    font: 'sans', size: 28, color: WHITE, a: ss(lt, 1.5, 2.2), align: 'l',
-  });
-  codeBlock(fr, x + 44, y + 360, w - 88, 120, [
-    '// in-process',
-    'const snap = await tool.snapshot();',
-  ], ss(lt, 1.8, 2.8));
 }
 
 /* ---------- 4 三个特性小卡 ---------- */
@@ -277,7 +285,7 @@ function card4(fr, lt) {
   const rows = list.length ? list.map(f => {
     const t = (typeof f === 'string') ? f : (f.title || f.name || '');
     const d = (typeof f === 'string') ? '' : (f.desc || f.hint || '');
-    return [String(t).slice(0, 10), String(d).slice(0, 14)];
+    return [String(t), String(d)];   // 不截断，featureCard 里字号会自适应
   }) : [['不看图', '直接读系统树'], ['稳定标识', '不会点歪'], ['毫秒级', '快速响应']];
 
   const gap = 24, w = (W - 120 - gap * (rows.length - 1)) / rows.length;
@@ -325,7 +333,7 @@ function card6(fr, lt) {
       font: 'mono', size: 26, color: GRAY, a: ss(lt, 2.0, 2.7),
     });
   }
-  fr.text('支持 macOS · Windows · Linux', W / 2, 1250, {
+  fr.text('' /* 原来写「支持 macOS · Windows · Linux」，那是别的项目的 */, W / 2, 1250, {
     font: 'sans', size: 22, color: '#4A6078', a: ss(lt, 2.2, 2.9),
   });
 
