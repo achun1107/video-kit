@@ -27,7 +27,7 @@ const WHITE = '#FFFFFF';
 const HILITE = '#7CE87C';   // 参考视频的荧光绿
 
 const T = {
-  c1: 1.0, c2: 6.0, c3: 11.5, c4: 17.0, c5: 22.5, c6: 28.0,
+  c1: 0, c2: 6.0, c3: 11.5, c4: 17.0, c5: 22.5, c6: 28.0,
   outro: DUR - 2.0,
 };
 
@@ -139,10 +139,15 @@ window.__IMAGES = [IMG];
 
 /* ---------- 1 标题卡 ---------- */
 function card1(fr, lt) {
-  const a = ss(lt, 0.15, 0.9);
-  titleCard(fr, ['【' + NAME + '】', '开源工具'], 620, a, { size: 82, rot: -0.02 });
-  // 黄色的装饰下划线
-  const k = ss(lt, 0.9, 1.6);
+  // 硬切 + star 前置
+  const star = STATS.star;
+  if (star) {
+    fr.text(star.toLocaleString('en-US') + ' ★', W / 2, 340, {
+      font: 'sans', size: 110, color: '#FFD400', a: 1, align: 'c',
+    });
+  }
+  titleCard(fr, ['【' + NAME + '】', '开源工具'], 620, 1, { size: 82, rot: -0.02 });
+  const k = ss(lt, 0.4, 1.2);
   if (k > 0.003) {
     fr.rect(W / 2 - 240, 760, 480 * k, 8, { fill: '#FFD400', a: 0.9 });
   }

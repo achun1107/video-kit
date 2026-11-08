@@ -34,7 +34,7 @@ const CARD = '#1B2A3E';
 const CODE_BG = '#0F1926';
 
 const T = {
-  c1: 0.8, c2: 6.0, c3: 12.0, c4: 18.0, c5: 24.0, c6: 29.5,
+  c1: 0, c2: 6.0, c3: 12.0, c4: 18.0, c5: 24.0, c6: 29.5,
   outro: DUR - 2.0,
 };
 
@@ -148,29 +148,58 @@ function featureCard(fr, x, y, w, h, title, desc, tag, a, col) {
 }
 
 /* ---------- 1 标题页 ---------- */
-function card1(fr, lt) {
-  pill(fr, '开源新作', 300, ss(lt, 0.1, 0.8));
+/* 标题分行：只在模块加载时算一次。
+ *
+ * 原来写在 card1() 里，每帧都跑一遍 measure（1044 帧 × 15 字 = 1.5 万次），
+ * measure 每次都要重设 canvas.font，直接导致渲染 180 秒超时。
+ * 标题内容在渲染期不变，没必要每帧重算。 */
+const HEAD_LINES = (() => {
+  const raw = HEAD || NAME;
+  const out = [];
+  let cur = '';
+  let w = 0;
+  // 88px 黑体下中文约 1 字宽 = 88，英文约 0.55
+  const maxW = W * 0.88;
+  for (const ch of Array.from(raw)) {
+    const cw = /[\u4e00-\u9fff]/.test(ch) ? 88 : (ch === ' ' ? 24 : 49);
+    if (w + cw > maxW && cur) {
+      out.push(cur);
+      cur = ch;
+      w = cw;
+    } else {
+      cur += ch;
+      w += cw;
+    }
+  }
+  if (cur) out.push(cur);
+  return out.slice(0, 2);
+})();
 
-  const a1 = ss(lt, 0.25, 1.2);
-  fr.text(HEAD.slice(0, 10) || NAME, W / 2, 440, {
-    font: 'sans', size: 88, color: WHITE, a: a1,
+/* ---------- 1 标题页 ---------- */
+function card1(fr, lt) {
+  // 硬切：第 0 帧就满
+  pill(fr, '开源新作', 300, 1);
+
+  const use = HEAD_LINES;
+  use.forEach((ln, i) => {
+    fr.text(ln, W / 2, 440 + i * 108, {
+      font: 'sans', size: 88, color: WHITE, a: 1,
+    });
   });
 
-  // 副标题：star 滚动
+  // 副标题：star 第 0 帧就出（最强的信任背书，不能等到 0.8 秒）
   const star = STATS.star;
-  const a2 = ss(lt, 0.9, 1.8);
+  const subY = 440 + use.length * 108 + 30;
   if (star) {
-    const k = ss(lt, 0.8, 2.2);
-    const shown = Math.round(star * E.out3(k));
-    gradText(fr, `GitHub ${shown.toLocaleString('en-US')}+ ★`, 560, 52, a2);
+    gradText(fr, `GitHub ${star.toLocaleString('en-US')}+ ★`, subY, 52, 1);
   }
 
   // 一行说明：三个卖点用 · 分隔
   const tags = FEATURES.slice(0, 3).map(f =>
     String((typeof f === 'string') ? f : (f.title || f.name || '')).slice(0, 8));
   const line = tags.length ? tags.join(' · ') : '结构化 JSON · 稳定标识 · 毫秒级';
-  fr.text(line, W / 2, 640, {
-    font: 'sans', size: 26, color: GRAY, a: ss(lt, 1.6, 2.4),
+  fr.text(line, W / 2, subY + 90, {
+    font: 'sans', size: 26, color: GRAY, a: 1,
   });
 }
 

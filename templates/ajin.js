@@ -22,7 +22,7 @@ const YELLOW = '#FFE500';
 const HILITE = 'rgba(255,229,0,0.38)';   // 荧光笔（半透明黄）
 
 const T = {
-  c1: 1.2, c2: 6.5, c3: 12.5, c4: 18.5, c5: 24.5, c6: 30.0,
+  c1: 0, c2: 6.5, c3: 12.5, c4: 18.5, c5: 24.5, c6: 30.0,
   outro: DUR - 2.0,
 };
 
@@ -95,18 +95,18 @@ window.__IMAGES = [IMG];
 
 /* ---------- 1 开场：项目名 + star ---------- */
 function card1(fr, lt) {
-  const k = ss(lt, 0, 1.2);
-  if (k <= 0) return;
+  // 硬切：第 0 帧就满，不淡入（抖音前 1 秒空屏等于放弃观众）
+  const k = 1;
   shotFull(fr, IMG, ss(lt, 0, 2.2));
 
   // 压一层深色，让字出来
   fr.rect(0, 0, W, H, { fill: '#000000', a: 0.42 * k });
 
-  marker(fr, NAME, W / 2, 700, 120, ss(lt, 0.15, 1.1), { rot: -0.05 });
+  marker(fr, NAME, W / 2, 700, 120, 1, { rot: -0.05 });
 
   const star = STATS.star;
   if (star) {
-    const a2 = ss(lt, 0.8, 1.9);
+    const a2 = 1;   // star 第 0 帧就出，不等 0.8 秒
     highlighter(fr, W / 2, 880, 620, 90, ss(lt, 0.9, 2.0), a2);
     marker(fr, `GitHub 上 ${star.toLocaleString('en-US')} star`,
            W / 2, 880, 56, a2, { rot: -0.02 });

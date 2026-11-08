@@ -131,28 +131,39 @@ window.__IMAGES = [IMG];
 
 /* ---------- 0 设计封面（参考视频第一帧的思路：Logo + 项目名 + 三个标签）---------- */
 function cover(fr, lt) {
-  const k = ss(lt, 0, 1.0);
-  if (k <= 0) return;
+  // 硬切：第 0 帧就满
+  const k = 1;
 
   fr.rect(0, 0, W, H, { fill: '#0A1015', a: 1 });
 
-  // 顶部：项目名（白，粗）
-  fr.text(NAME, W / 2, 300, {
-    font: 'sans', size: 96, color: '#FFFFFF', a: k, align: 'c',
+  // ── 顶部：star 大数字（最强钩子，第 0 帧就出）──
+  const star = STATS.star;
+  if (star) {
+    fr.text(star.toLocaleString('en-US'), W / 2, 200, {
+      font: 'sans', size: 130, color: YELLOW, a: 1, align: 'c',
+    });
+    fr.text('GitHub 星标', W / 2, 320, {
+      font: 'sans', size: 40, color: '#8FA3B0', a: 1, align: 'c',
+    });
+  }
+
+  // 项目名（白，粗）
+  fr.text(NAME, W / 2, 440, {
+    font: 'sans', size: 96, color: '#FFFFFF', a: 1, align: 'c',
   });
 
-  // 中间：一句话（灰）
+  // 一句话（灰）
   if (HEAD) {
-    fr.text(HEAD.slice(0, 14), W / 2, 400, {
-      font: 'sans', size: 44, color: '#8FA3B0', a: ss(lt, 0.3, 1.0), align: 'c',
+    fr.text(HEAD.slice(0, 14), W / 2, 540, {
+      font: 'sans', size: 44, color: '#8FA3B0', a: 1, align: 'c',
     });
   }
 
   // 中部大图区：放截图（圆角）
-  const a2 = ss(lt, 0.4, 1.4);
+  const a2 = 1;
   if (a2 > 0.003 && IMG.complete && IMG.naturalWidth) {
     const w = 760, h = w * IMG.naturalHeight / IMG.naturalWidth;
-    const x = (W - w) / 2, y = 500;
+    const x = (W - w) / 2, y = 620;
     const ctx = fr.x;
     ctx.save();
     ctx.beginPath();
@@ -168,8 +179,8 @@ function cover(fr, lt) {
     String((typeof f === 'string') ? f : (f.title || f.name || '')).slice(0, 6));
   const use = tags.length ? tags : ['智能识别', '结构自适应', '精准提取'];
   use.forEach((t, i) => {
-    const a = ss(lt, 0.9 + i * 0.2, 0.9 + i * 0.2 + 0.6);
-    const y = 1180 + i * 96;
+    const a = 1;
+    const y = 1290 + i * 96;
     fr.rect(W / 2 - 140, y - 36, 280, 72, {
       r: 14, fill: '#1B73E8', a: a * 0.22,
     });
@@ -182,8 +193,8 @@ function cover(fr, lt) {
   });
 
   // 底部一句话
-  fr.text('页面怎么变，内容都能抓', W / 2, 1520, {
-    font: 'sans', size: 30, color: '#5A6A78', a: ss(lt, 1.6, 2.4), align: 'c',
+  fr.text('页面怎么变，内容都能抓', W / 2, 1620, {
+    font: 'sans', size: 30, color: '#5A6A78', a: 1, align: 'c',
   });
 }
 
