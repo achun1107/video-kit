@@ -33,6 +33,9 @@ const T = {
 
 const SUBS = window.SUBS || [];
 
+/* 本套的关注引导话术 */
+const CTA_TEXT = '关注我，一天一个神奇项目';
+
 const pad2 = n => String(n).padStart(2, '0');
 function timecode(t) {
   const s = Math.max(0, t), m = Math.floor(s / 60), s2 = Math.floor(s % 60),
@@ -233,6 +236,9 @@ function card6(fr, lt) {
       font: 'mono', size: 26, color: '#888888', a: ss(lt, 1.6, 2.3),
     });
   }
+
+  // 结尾引导（系列号 + 关注）
+  outroBar(fr, 1, { y: 1290 });
 }
 
 function subtitles(fr, t) {
@@ -281,6 +287,36 @@ function cut(fr, t, a, b, fn) {
     a: kk, s,
     at: [W / 2 * (1 - s), H / 2 * (1 - s) + dy],
   }, () => fn(fr, t - a));
+}
+
+
+/* 结尾引导：系列号 + 关注 CTA。
+ * 抖音观众不会主动关注，必须明说 —— 这是运营的基本动作。 */
+function outroBar(fr, a, o) {
+  o = o || {};
+  if (a <= 0.003) return;
+  const y = o.y || 1290;
+  const color = o.color || '#9A9A9A';
+  const accent = o.accent || '#FFE500';
+
+  // 深色底带：CTA 压在截图上会跟内容混在一起，必须托出来
+  fr.rect(0, y - 56, W, 210, { fill: '#000000', a: a * 0.82 });
+
+  // 系列号
+  const series = (CT.series || 0);
+  if (series) {
+    fr.text('第 ' + series + ' 个开源项目', W / 2, y, {
+      font: 'mono', size: 24, color, a: a * 0.8,
+    });
+  }
+
+  // 分隔线
+  fr.rect(W / 2 - 90, y + 34, 180, 1, { fill: color, a: a * 0.4 });
+
+  // CTA
+  fr.text(o.cta || CTA_TEXT, W / 2, y + 74, {
+    font: 'sans', size: 30, color: accent, a,
+  });
 }
 
 VK.film({
