@@ -157,7 +157,7 @@ function cover(fr, lt) {
 
   // 一句话（灰）
   if (HEAD) {
-    fr.text(HEAD.slice(0, 14), W / 2, 540, {
+    fr.text(HEAD, W / 2, 540, {
       font: 'sans', size: 44, color: '#8FA3B0', a: 1, align: 'c',
     });
   }
@@ -177,28 +177,7 @@ function cover(fr, lt) {
     ctx.restore();
   }
 
-  // 三个标签（蓝色圆角块，参考视频里是"智能识别/结构自适应/精准提取"）
-  const tags = FEATURES.slice(0, 3).map(f =>
-    String((typeof f === 'string') ? f : (f.title || f.name || '')).slice(0, 6));
-  const use = tags.length ? tags : ['智能识别', '结构自适应', '精准提取'];
-  use.forEach((t, i) => {
-    const a = 1;
-    const y = 1290 + i * 96;
-    fr.rect(W / 2 - 140, y - 36, 280, 72, {
-      r: 14, fill: '#1B73E8', a: a * 0.22,
-    });
-    fr.rect(W / 2 - 140, y - 36, 280, 72, {
-      r: 14, color: '#4A9EFF', w: 2, a: a * 0.8,
-    });
-    fr.text(t, W / 2, y, {
-      font: 'sans', size: 32, color: '#8CC4FF', a, align: 'c',
-    });
-  });
 
-  // 底部一句话
-  fr.text('页面怎么变，内容都能抓', W / 2, 1620, {
-    font: 'sans', size: 30, color: '#5A6A78', a: 1, align: 'c',
-  });
 }
 
 /* ---------- 1 大字点名 ---------- */
