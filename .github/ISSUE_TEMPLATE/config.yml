@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 使用问题 / 怎么跑
+    url: https://github.com/achun1107/video-kit/blob/main/docs/FAQ.md
+    about: 先看 FAQ，常见坑都记在那里
+  - name: 安全漏洞
+    url: https://github.com/achun1107/video-kit/security/advisories/new
+    about: 私密报告，不要开公开 issue

@@ -1,0 +1,106 @@
+# llms.txt
+
+> 给大语言模型的仓库导读。按 llms.txt 规范编写。
+> 人类读者请看 [README.md](README.md)。
+
+## 一句话
+
+video-kit 把 GitHub 仓库或抖音视频转成 1080×1920 竖屏讲解视频，一条命令完成内容抽取、
+配音、字幕、卡片渲染、混音、播放页。
+
+## 入口
+
+```
+node tools/make-video.mjs --repo <github url|本地目录> --out <工程目录>
+node tools/make-video.mjs --douyin <抖音分享链接> --out <工程目录>
+```
+
+可选参数：`--skip-render`（只做到配音+模板）、`--reset-film`、`--reset-html`、
+`--music <mp3>`、`--asr-model small|medium|large-v3`、`--try N`、`--video <id>`。
+
+## 目录
+
+- `engine/vk.js` — 渲染引擎。`VK.film({dur, fps, draw})`，`draw(fr, t)` 每帧是 t 的纯函数。
+- `engine/vk-kit.js` — 语法件：字幕、数字轮、章节点、圈选。
+- `engine/render.py` — Playwright 逐帧截图 → ffmpeg 合成。`--stills` 抽帧、`--det` 确定性检查、`--sheet N` 总览图。
+- `engine/audio.py` — 合成配乐与音效。
+- `engine/get_fonts.py` — 下载 14 个 SIL OFL 字体（43MB，不进库）。
+- `tools/make-video.mjs` — 九步编排器。**改流程从这里进**。
+- `tools/film-template.js` — 通用七卡模板。**改画面从这里进**。
+- `tools/tts.py` — edge-tts 配音 + SRT 解析 → `audio/subs.json`。
+- `tools/mix.py` — 三层混音，人声领先配乐 19.2dB，`loudnorm -13 LUFS`。
+- `tools/extract-content.mjs` — 仓库 → `content.json`。
+- `tools/repo-content.py` — 用 GitHub API 生成 `content.json`（避开大仓库 clone 超时）。
+- `tools/shot-github.py` — 截 GitHub 页面，带聚焦坐标。
+- `tools/make-player-html.py` — 自包含播放页（base64 内嵌视频）。
+- `tools/douyin-rank.py` — 抖音主页视频列表 + 点赞数。
+- `tools/douyin-download.py` — 提取 mp4 直链下载（绕过 yt-dlp 的 cookie 限制）。
+- `tools/transcribe-local.py` — faster-whisper 本地转写。
+- `tools/repo-finder.py` — 从转写文本反查 GitHub 仓库（star 指纹 + 关键词 + 置信度）。
+- `tools/asrfix.py` — whisper 中文误听纠正表。
+- `tools/reverse-batch.py` — 批量逆向高赞视频。
+- `tools/script-writer.py` — 生成模板稿 + 参考稿两档文案。
+
+## 数据结构
+
+`content.json`（被 `film.js` 读取）：
+
+```json
+{
+  "repo": "owner/name",
+  "namePlain": "显示名",
+  "emoji": "🎬",
+  "headline": "一句话卖点",
+  "tagline": "更长描述",
+  "version": "1.0.0",
+  "accent": "#E8613C",
+  "accent2": "#6FE04A",
+  "stats": { "star": 129, "fork": 7 },
+  "statLabels": { "star": "Star" },
+  "features": [{ "title": "特性名", "desc": "补充" }],
+  "chapters": [{ "no": "01", "title": "章节" }],
+  "palettes": ["色名"],
+  "conclusion": ["结论一", "结论二", "结论三"]
+}
+```
+
+`audio/copy.json`（文案）：
+
+```json
+{
+  "voice": "zh-CN-YunxiNeural",
+  "rate": "+45%",
+  "pitch": "+5Hz",
+  "vo1": "第一段文案（约 20 秒）",
+  "vo2": "第二段文案（约 10 秒）",
+  "variants": { "template": {...}, "reference": {...} }
+}
+```
+
+## 硬约束
+
+1. 画面必须是 `t` 的纯函数，不能用 `Math.random()` / `Date.now()` / 跨帧状态。
+2. 不要用 `ctx.shadow*`（破坏 `--det` 确定性）。
+3. 多图合成先烤到离屏 canvas。
+4. 改完必须 `--det` 通过。
+
+详见 [AGENTS.md](AGENTS.md)。
+
+## 常见任务
+
+| 想做什么 | 从哪开始 |
+|---|---|
+| 改卡片布局 | `tools/film-template.js` 的 `card1`…`card7` |
+| 加一种输入源 | `tools/make-video.mjs` 开头，参考 `--douyin` 的块 |
+| 改配色 | `film.js` 里的 `C` 对象 |
+| 改时间轴 | `film.js` 里的 `T` 对象和 `SUBS` |
+| 换配音音色 | `audio/copy.json` 的 `voice` / `rate` / `pitch` |
+| 换配乐 | `--music <path>`，或 `audio/bgm/` 里换 |
+
+## 已知限制
+
+- 文案必须人写（自动生成的是通用模板稿）
+- 私有仓库不支持（抽内容要读文件）
+- 渲染 3–6 分钟（1044 帧）
+- 抖音链接需要网络能访问抖音
+- GitHub API 无 token 时限流 60 次/小时

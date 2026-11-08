@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: 语法与结构检查
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Node 脚本语法
+        run: |
+          for f in tools/*.mjs; do
+            echo "check $f"
+            node --check "$f"
+          done
+
+      - name: 引擎语法
+        run: |
+          node --check engine/vk.js
+          node --check engine/vk-kit.js
+
+      - name: Python 语法
+        run: |
+          pip install --quiet pyflakes
+          python -m pyflakes tools/*.py engine/*.py || true
+
+      - name: JSON 校验
+        run: |
+          for f in $(find . -name '*.json' -not -path './node_modules/*' -not -path './_repos/*'); do
+            python -c "import json,sys; json.load(open(sys.argv[1], encoding='utf-8'))" "$f" || exit 1
+          done
+
+      - name: 必需文件齐全
+        run: |
+          for f in README.md LICENSE AGENTS.md llms.txt CHANGELOG.md SECURITY.md CONTRIBUTING.md \
+                   tools/make-video.mjs tools/film-template.js engine/vk.js; do
+            test -f "$f" || { echo "缺 $f"; exit 1; }
+          done
+          echo "文件齐全"
+
+      - name: 没有把不该提交的东西塞进来
+        run: |
+          fail=0
+          for d in engine/fonts renders review _repos node_modules; do
+            if [ -d "$d" ]; then echo "× 不该有 $d"; fail=1; fi
+          done
+          if git ls-files | grep -qE '\.(mp4|gif)$'; then echo "× 有视频产物"; fail=1; fi
+          if git ls-files audio/ | grep -qv 'audio/bgm/'; then echo "× audio/ 下有非 bgm 文件"; fail=1; fi
+          exit $fail
+
+      - name: 敏感信息扫描
+        run: |
+          pat='ghp_[A-Za-z0-9]{30,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY'
+          if git grep -n -I -E "$pat"; then echo "× 发现疑似密钥"; exit 1; fi
+          echo "无密钥"

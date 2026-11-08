@@ -19,15 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-第三方素材授权：
-
-- 字体（Noto Sans SC / Noto Serif SC / Cormorant Garamond / Lora /
-  JetBrains Mono / Courier Prime）均为 SIL Open Font License 1.1，
-  由 engine/get_fonts.py 从 github.com/google/fonts 下载，不入库。
-
-- 配乐（audio/bgm/ 下 6 首）均为 Kevin MacLeod (incompetech.com) 作品，
-  Creative Commons: By Attribution 4.0 License
-  https://creativecommons.org/licenses/by/4.0/

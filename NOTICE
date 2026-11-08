@@ -1,0 +1,49 @@
+# NOTICE
+
+本项目自身以 MIT 授权（见 [LICENSE](LICENSE)）。下面列出随仓库分发的第三方素材及其授权。
+
+## 字体
+
+`engine/fonts/` 下的字体**不进版本库**，由 `python engine/get_fonts.py` 从
+[google/fonts](https://github.com/google/fonts) 下载，均为 SIL Open Font License 1.1：
+
+| 字体 | 用途 | 授权 |
+|---|---|---|
+| Noto Sans SC | 中文黑体 | OFL-1.1 |
+| Noto Serif SC | 中文宋体 | OFL-1.1 |
+| Cormorant Garamond | 拉丁衬线 | OFL-1.1 |
+| Lora | 拉丁衬线 | OFL-1.1 |
+| JetBrains Mono | 等宽 | OFL-1.1 |
+| Courier Prime | 打字机等宽 | OFL-1.1 |
+
+OFL 原文随字体一同下载（`engine/fonts/OFL-*.txt`）。
+
+## 配乐
+
+`audio/bgm/` 下 6 首曲目均为 Kevin MacLeod（[incompetech.com](https://incompetech.com)）作品，
+以 **Creative Commons Attribution 4.0** 授权：
+
+> Kevin MacLeod (incompetech.com)
+> Licensed under Creative Commons: By Attribution 4.0 License
+> http://creativecommons.org/licenses/by/4.0/
+
+曲目清单：
+
+- Carefree
+- Life of Riley
+- Fluffing a Duck
+- Monkeys Spinning Monkeys
+- Sneaky Snitch
+- Wallpaper
+
+使用时请保留上述署名。
+
+## 渲染引擎
+
+`engine/vk.js` 与 `engine/vk-kit.js` 源自
+[vibe-knowledge-film](https://github.com/HeyChengC/vibe-knowledge-film)，MIT 授权。
+
+## 视频里引用的第三方项目
+
+生成的视频中会展示被讲解仓库的名称、描述、star 数和截图，这些内容版权归各自项目所有。
+本工具只做展示，不主张任何权利。
