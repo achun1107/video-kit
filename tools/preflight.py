@@ -132,6 +132,64 @@ def check_subs_match(proj):
     return [R('C 字幕一致', True, f'{len(subs)} 条全部命中')]
 
 
+def check_subs_pacing(proj):
+    """K：字幕节奏。
+
+    第 12 轮发现一条字幕 49 字停 7.7 秒 —— YouTube 口播的做法。
+    抖音观众 2 秒没变化就划走，而且 49 字在 1080 宽屏上放不下。
+
+    判据：
+      · 条数 ≥ 10（34.8 秒片长，平均 3.5 秒/条以内）
+      · 平均停留 0.8 ~ 2.8 秒
+      · 最长一条 ≤ 20 字（英文数字按 0.55 宽度算会短，给点余量）
+      · 相邻不重叠
+    """
+    sp = proj / 'audio' / 'subs.json'
+    if not sp.exists():
+        return [R('K 字幕节奏', False, '缺 subs.json')]
+    subs = json.loads(sp.read_text(encoding='utf-8'))
+    subs = subs if isinstance(subs, list) else subs.get('subs', [])
+    if not subs:
+        return [R('K 字幕节奏', False, 'subs 为空')]
+
+    n = len(subs)
+
+    def vlen(s):
+        """按显示宽度算：中文 1，英文数字 0.55，空格 0.3。
+
+        不能直接用 len() —— 「GitHub 上已经有 133 个 star，」是 23 个字符，
+        但显示宽度只有 12.7 个中文宽，塞得下。
+        """
+        w = 0.0
+        for ch in (s or ''):
+            if '\u4e00' <= ch <= '\u9fff':
+                w += 1
+            elif ch == ' ':
+                w += 0.3
+            else:
+                w += 0.55
+        return w
+
+    avg = sum(s['b'] - s['a'] for s in subs) / n
+    longest = max(vlen(s.get('zh', '')) for s in subs)
+    overlap = sum(1 for i in range(1, n) if subs[i]['a'] < subs[i - 1]['b'] - 0.01)
+
+    problems = []
+    if n < 10:
+        problems.append(f'只有{n}条')
+    if not (0.8 <= avg <= 2.8):
+        problems.append(f'平均{avg:.1f}s/条')
+    if longest > 16:
+        problems.append(f'最长{longest:.0f}字宽')
+    if overlap:
+        problems.append(f'{overlap}处重叠')
+
+    detail = f'{n}条 平均{avg:.1f}s 最宽{longest:.0f} 重叠{overlap}'
+    if problems:
+        detail += ' → ' + '，'.join(problems)
+    return [R('K 字幕节奏', not problems, detail)]
+
+
 def check_first_frame(mp4):
     """D：第 0.1 秒不能是黑屏。
 
@@ -265,6 +323,7 @@ def main():
         rs += check_content(proj)
         rs += check_copy(proj)
         rs += check_subs_match(proj)
+        rs += check_subs_pacing(proj)
         if mp4.exists():
             rs += check_first_frame(mp4)
             rs += check_loudness(mp4)
