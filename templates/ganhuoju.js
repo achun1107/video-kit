@@ -314,7 +314,7 @@ function subtitles(fr, t) {
 
   const vw = Array.from(s.zh).reduce(
     (n, ch) => n + (/[\u4e00-\u9fff]/.test(ch) ? 1 : (ch === ' ' ? 0.3 : 0.56)), 0);
-  const size = Math.min(60, Math.round(920 / (vw * 1.0)));
+  const size = Math.min(56, Math.round(640 / (vw * 1.0)));
 
   // 垫一条深色带，浅色截图上字幕才不糊
   fr.rect(W / 2 - 480, 1330 - size * 0.9, 960, size * 1.8, {
