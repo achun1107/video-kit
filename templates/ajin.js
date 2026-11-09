@@ -52,14 +52,18 @@ function marker(fr, text, x, y, size, a, o) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(rot);
-  // 描边（黑），让黄字在亮截图上也看得清
+  // 四向描边。原来是「原位画黑 + 原位画黄」，黑被黄完全盖住，等于没描边
+  // —— 截图亮起来之后文字就看不见了。
+  const off = Math.max(2.4, size * 0.038);
+  for (const [dx, dy] of [[-off, 0], [off, 0], [0, -off], [0, off]]) {
+    fr.text(text, dx, dy, {
+      font: 'hand', size, color: '#000000',
+      a: a * 0.85, align: o.align || 'c', shadow: 0,
+    });
+  }
+  // 白字 + 黄色荧光笔底 = 真的荧光笔标记
   fr.text(text, 0, 0, {
-    font: 'hand', size, color: '#000000',
-    a: a * 0.5, align: o.align || 'c',
-    shadow: 0,
-  });
-  fr.text(text, 0, 0, {
-    font: 'hand', size, color: o.color || YELLOW, a, align: o.align || 'c',
+    font: 'hand', size, color: o.color || '#FFFFFF', a, align: o.align || 'c',
   });
   ctx.restore();
 }
@@ -68,7 +72,7 @@ function marker(fr, text, x, y, size, a, o) {
 function highlighter(fr, x, y, w, h, k, a) {
   if (k <= 0.003) return;
   const ww = w * Math.min(1, k);
-  fr.rect(x - ww / 2, y - h / 2, ww, h, { fill: YELLOW, a: (a || 1) * 0.30 });
+  fr.rect(x - ww / 2, y - h / 2, ww, h, { fill: YELLOW, a: (a || 1) * 0.22 });
 }
 
 /* 截图：铺满屏，轻微推拉 */
@@ -103,7 +107,7 @@ function card1(fr, lt) {
   shotFull(fr, IMG, ss(lt, 0, 2.2));
 
   // 压一层深色，让字出来
-  fr.rect(0, 0, W, H, { fill: '#000000', a: 0.42 * k });
+  fr.rect(0, 0, W, H, { fill: '#000000', a: 0.18 * k });
 
   marker(fr, NAME, W / 2, 700, 120, 1, { rot: -0.05 });
 
@@ -120,7 +124,7 @@ function card1(fr, lt) {
 function card2(fr, lt) {
   const k = ss(lt, 0.1, 1.4);
   shotFull(fr, IMG, 0.5 + ss(lt, 0, 3.0) * 0.5);
-  fr.rect(0, 0, W, H, { fill: '#000000', a: 0.48 * k });
+  fr.rect(0, 0, W, H, { fill: '#000000', a: 0.2 * k });
 
   const line = HEAD || '一个值得看看的开源项目';
   const chars = Array.from(line);
@@ -142,7 +146,7 @@ function card2(fr, lt) {
 function card3(fr, lt) {
   const k = ss(lt, 0.1, 1.2);
   shotFull(fr, IMG, 0.8);
-  fr.rect(0, 0, W, H, { fill: '#000000', a: 0.52 * k });
+  fr.rect(0, 0, W, H, { fill: '#000000', a: 0.22 * k });
 
   const list = FEATURES.slice(0, 3).map(f =>
     String((typeof f === 'string') ? f : (f.title || f.name || '')).slice(0, 14));
