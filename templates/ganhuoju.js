@@ -146,7 +146,7 @@ function bed(fr, img, dark, z, region) {
   // 原来垂直居中铺满会让 3 行文字压在截图上，观众看不清内容。
   let targetW = region && region !== 'full' ? W * 0.92 * zoom : W * 0.94 * zoom;
   let targetH = targetW * sh / sw;
-  const MAX_H = H * 0.58;
+  const MAX_H = H * 0.50;   // 50% 才不压到下方文字
   if (targetH > MAX_H) {
     targetH = MAX_H;
     targetW = targetH * sw / sh;
@@ -244,8 +244,9 @@ function cover(fr, lt) {
 /* ---------- 1 大字点名 ---------- */
 function card1(fr, lt) {
   bed(fr, IMG, 0.86, 1 + 0.06 * Math.min(1, lt / 4.4), 'top');
-  scrawl(fr, NAME, W / 2, 1040, 104, 1, { rot: -0.06 });   // 硬切，名字第 0 帧就出
-  scrawl(fr, '来了', W / 2 + 42, 1158, 68, ss(lt, 0.5, 1.3), { rot: 0.05 });   // 提前出现，别让画面空着
+  // 手写当视觉锚点：4 个字，128px，占焦点但不抢内容
+  scrawl(fr, NAME, W / 2, 1092, 128, 1, { rot: -0.06 });
+  scrawl(fr, '来了', W / 2 + 76, 1212, 92, ss(lt, 0.5, 1.3), { rot: 0.05 });
 }
 
 /* ---------- 2 star ---------- */
@@ -253,64 +254,33 @@ function card2(fr, lt) {
   bed(fr, IMG, 0.86, 1 + 0.06 * Math.min(1, lt / 4.4), 'bot');
   const star = STATS.star;
   if (star) {
-    // 硬切 + 数字快滚：原来 0.2~1.6 秒淡入，切进来时几乎是空的
+    // 数字滚进 + 超大字号，纯视觉冲击，不用整句
     const k = ss(lt, 0, 0.7);
     const shown = Math.round(star * E.out3(k));
-    scrawl(fr, `狂揽 ${shown.toLocaleString('en-US')} star`,
-           W / 2, 1140, 82, 1, { rot: -0.035 });
+    scrawl(fr, `${shown.toLocaleString('en-US')} ★`,
+           W / 2, 1140, 150, 1, { rot: -0.035 });
   } else {
-    scrawl(fr, '完全开源', W / 2, 1140, 98, ss(lt, 0.2, 1.4));
+    scrawl(fr, '开源', W / 2, 1140, 140, ss(lt, 0.2, 1.4));
   }
 }
 
 /* ---------- 3 最厉害的地方 ---------- */
 function card3(fr, lt) {
   bed(fr, IMG, 0.88, 1 + 0.04 * Math.min(1, lt / 4.4), 'mid');
-  scrawl(fr, '这款工具到底能干什么', W / 2, 1040, 70, 1, { rot: -0.03 });
-  if (HEAD) {
-    // 按字数分行 + 字号随行长自适应（原来 slice(0,12) 会把「搞定一切」切掉）
-    const chars = Array.from(HEAD);
-    const per = Math.min(11, Math.ceil(chars.length / 2));
-    const rows = [];
-    for (let i = 0; i < chars.length; i += per) {
-      rows.push(chars.slice(i, i + per).join(''));
-    }
-    rows.slice(0, 2).forEach((r, i) => {
-      const size = r.length >= 10 ? 72 : (r.length >= 8 ? 82 : 92);
-      scrawl(fr, r, W / 2, 1130 + i * 78, Math.min(size, 62),
-             ss(lt, 0.5 + i * 0.3, 1.4 + i * 0.3), { rot: 0.04 });
-    });
-  }
+  // 只有 3 个字，剩下的交给字幕
+  scrawl(fr, '重点是', W / 2, 1140, 132, 1, { rot: -0.03 });
 }
 
 /* ---------- 4 场景：不管怎么变 ---------- */
 function card4(fr, lt) {
   bed(fr, IMG, 0.88, 1 + 0.06 * Math.min(1, lt / 4.4), 'left');
-  // 大字手写：features 按逗号拆两行。
-  // 原来写成「第二个亮点」+ 两行小字，字号砍半、气势全丢，还多了机器味标签。
-  const f = FEATURES[1];
-  const t = String((typeof f === 'string') ? f : (f && (f.title || f.name)) || '');
-  const parts = t.split(/[，,、]/).filter(Boolean);
-  const a1 = parts[0] || t || '第二个亮点';
-  const a2 = parts[1] || '';
-  scrawl(fr, a1, W / 2, 1050 + (a2 ? 0 : 60), 78, 1, { rot: -0.05 });
-  if (a2) {
-    scrawl(fr, a2, W / 2, 1162, 64, ss(lt, 0.5, 1.5), { rot: 0.035 });
-  }
+  scrawl(fr, '免费', W / 2, 1140, 160, 1, { rot: -0.05 });
 }
 
 /* ---------- 5 降门槛 ---------- */
 function card5(fr, lt) {
   bed(fr, IMG, 0.88, 1 + 0.06 * Math.min(1, lt / 4.4), 'right');
-  const f = FEATURES[2];
-  const t = String((typeof f === 'string') ? f : (f && (f.title || f.name)) || '');
-  const parts = t.split(/[，,、]/).filter(Boolean);
-  const a1 = parts[0] || t || '第三个要点';
-  const a2 = parts[1] || '';
-  scrawl(fr, a1, W / 2, 1052 + (a2 ? 0 : 60), 78, 1, { rot: -0.04 });
-  if (a2) {
-    scrawl(fr, a2, W / 2, 1165, 64, ss(lt, 0.45, 1.4), { rot: 0.03 });
-  }
+  scrawl(fr, '零门槛', W / 2, 1140, 132, 1, { rot: -0.04 });
 }
 
 /* ---------- 6 结论 ---------- */
