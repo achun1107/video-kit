@@ -141,11 +141,18 @@ function bed(fr, img, dark, z, region) {
     sw = iw * 0.38; sx = iw * 0.62; sh = ih * 0.52; sy = ih * 0.18;
   }
 
-  // 目标框：裁剪区放大到接近满宽（full 保持 0.94 完整显示）
-  const targetW = region && region !== 'full' ? W * 0.90 * zoom : W * 0.94 * zoom;
-  const targetH = targetW * sh / sw;
+  // 目标框：靠上显示，最多占 58% 画面高度。
+  // 爆款的结构是「截图占主体、文字在下一条」，
+  // 原来垂直居中铺满会让 3 行文字压在截图上，观众看不清内容。
+  let targetW = region && region !== 'full' ? W * 0.92 * zoom : W * 0.94 * zoom;
+  let targetH = targetW * sh / sw;
+  const MAX_H = H * 0.58;
+  if (targetH > MAX_H) {
+    targetH = MAX_H;
+    targetW = targetH * sw / sh;
+  }
   const dx = (W - targetW) / 2;
-  const dy = (H - targetH) / 2;
+  const dy = H * 0.055;
 
   // 细边
   fr.rect(dx - 3, dy - 3, targetW + 6, targetH + 6, { fill: '#30363D', a: 0.9 });
@@ -237,8 +244,8 @@ function cover(fr, lt) {
 /* ---------- 1 大字点名 ---------- */
 function card1(fr, lt) {
   bed(fr, IMG, 0.86, 1 + 0.06 * Math.min(1, lt / 4.4), 'top');
-  scrawl(fr, NAME, W / 2, 760, 150, 1, { rot: -0.06 });   // 硬切，名字第 0 帧就出
-  scrawl(fr, '来了', W / 2 + 60, 940, 96, ss(lt, 0.55, 1.4), { rot: 0.05 });   // 提前出现，别让画面空着
+  scrawl(fr, NAME, W / 2, 1040, 104, 1, { rot: -0.06 });   // 硬切，名字第 0 帧就出
+  scrawl(fr, '来了', W / 2 + 42, 1158, 68, ss(lt, 0.5, 1.3), { rot: 0.05 });   // 提前出现，别让画面空着
 }
 
 /* ---------- 2 star ---------- */
@@ -250,16 +257,16 @@ function card2(fr, lt) {
     const k = ss(lt, 0, 0.7);
     const shown = Math.round(star * E.out3(k));
     scrawl(fr, `狂揽 ${shown.toLocaleString('en-US')} star`,
-           W / 2, 760, 92, 1, { rot: -0.035 });
+           W / 2, 1140, 82, 1, { rot: -0.035 });
   } else {
-    scrawl(fr, '完全开源', W / 2, 760, 120, ss(lt, 0.2, 1.4));
+    scrawl(fr, '完全开源', W / 2, 1140, 98, ss(lt, 0.2, 1.4));
   }
 }
 
 /* ---------- 3 最厉害的地方 ---------- */
 function card3(fr, lt) {
   bed(fr, IMG, 0.88, 1 + 0.04 * Math.min(1, lt / 4.4), 'mid');
-  scrawl(fr, '这款工具到底能干什么', W / 2, 700, 92, 1, { rot: -0.03 });
+  scrawl(fr, '这款工具到底能干什么', W / 2, 1040, 70, 1, { rot: -0.03 });
   if (HEAD) {
     // 按字数分行 + 字号随行长自适应（原来 slice(0,12) 会把「搞定一切」切掉）
     const chars = Array.from(HEAD);
@@ -270,7 +277,7 @@ function card3(fr, lt) {
     }
     rows.slice(0, 2).forEach((r, i) => {
       const size = r.length >= 10 ? 72 : (r.length >= 8 ? 82 : 92);
-      scrawl(fr, r, W / 2, 880 + i * 112, size,
+      scrawl(fr, r, W / 2, 1130 + i * 78, Math.min(size, 62),
              ss(lt, 0.5 + i * 0.3, 1.4 + i * 0.3), { rot: 0.04 });
     });
   }
@@ -286,9 +293,9 @@ function card4(fr, lt) {
   const parts = t.split(/[，,、]/).filter(Boolean);
   const a1 = parts[0] || t || '第二个亮点';
   const a2 = parts[1] || '';
-  scrawl(fr, a1, W / 2, 700 + (a2 ? 0 : 60), 104, 1, { rot: -0.05 });
+  scrawl(fr, a1, W / 2, 1050 + (a2 ? 0 : 60), 78, 1, { rot: -0.05 });
   if (a2) {
-    scrawl(fr, a2, W / 2, 890, 88, ss(lt, 0.55, 1.6), { rot: 0.035 });
+    scrawl(fr, a2, W / 2, 1162, 64, ss(lt, 0.5, 1.5), { rot: 0.035 });
   }
 }
 
@@ -300,9 +307,9 @@ function card5(fr, lt) {
   const parts = t.split(/[，,、]/).filter(Boolean);
   const a1 = parts[0] || t || '第三个要点';
   const a2 = parts[1] || '';
-  scrawl(fr, a1, W / 2, 740 + (a2 ? 0 : 60), 100, 1, { rot: -0.04 });
+  scrawl(fr, a1, W / 2, 1052 + (a2 ? 0 : 60), 78, 1, { rot: -0.04 });
   if (a2) {
-    scrawl(fr, a2, W / 2, 920, 88, ss(lt, 0.5, 1.5), { rot: 0.03 });
+    scrawl(fr, a2, W / 2, 1165, 64, ss(lt, 0.45, 1.4), { rot: 0.03 });
   }
 }
 
