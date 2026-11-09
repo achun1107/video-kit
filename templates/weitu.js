@@ -455,19 +455,36 @@ VK.film({
     /* 深蓝渐变底 + 顶部径向光 */
     fr.look.under = (ctx, tt) => {
       ctx.save();
+
+      // 渐变本身缓慢流动：三个色标的位置随 t 轻微移动。
+      // 第一版只动了光晕（alpha ±0.055），幅度太小，
+      // 缩到 216×384 的检测图上被平均值抹平，测不出变化。
+      const f1 = 0.55 + 0.10 * Math.sin(tt * Math.PI * 2 / 7.3);
       const g = ctx.createLinearGradient(0, 0, 0, H);
       g.addColorStop(0, BG_TOP);
-      g.addColorStop(0.55, BG_BOT);
+      g.addColorStop(Math.max(0.25, Math.min(0.8, f1)), BG_BOT);
       g.addColorStop(1, BG_TOP);
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, W, H);
 
-      // 顶部蓝光
-      const r = ctx.createRadialGradient(W / 2, 0, 0, W / 2, 0, W * 0.9);
-      r.addColorStop(0, 'rgba(74,158,255,0.13)');
+      // 顶部蓝光：横向漂移 + 强度呼吸 + 半径脉动（幅度加大）
+      const lx = W / 2 + Math.sin(tt * Math.PI * 2 / 6.5) * W * 0.34;
+      const lw = 0.16 + 0.12 * Math.sin(tt * Math.PI * 2 / 4.2);
+      const lr = W * (0.95 + 0.22 * Math.sin(tt * Math.PI * 2 / 5.3));
+      const r = ctx.createRadialGradient(lx, 0, 0, lx, 0, lr);
+      r.addColorStop(0, `rgba(74,158,255,${Math.max(0, lw).toFixed(4)})`);
       r.addColorStop(1, 'rgba(74,158,255,0)');
       ctx.fillStyle = r;
       ctx.fillRect(0, 0, W, 900);
+
+      // 底部青色余光，和顶部反相摆动
+      const bx = W / 2 - Math.sin(tt * Math.PI * 2 / 8.1) * W * 0.30;
+      const bw = 0.10 + 0.09 * Math.sin(tt * Math.PI * 2 / 5.7 + 1.6);
+      const br = ctx.createRadialGradient(bx, H, 0, bx, H, W * 1.05);
+      br.addColorStop(0, `rgba(60,220,200,${Math.max(0, bw).toFixed(4)})`);
+      br.addColorStop(1, 'rgba(60,220,200,0)');
+      ctx.fillStyle = br;
+      ctx.fillRect(0, H - 1100, W, 1100);
 
       // 底部青光
       const r2 = ctx.createRadialGradient(W / 2, H, 0, W / 2, H, W * 0.7);
