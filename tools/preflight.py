@@ -29,6 +29,7 @@
 """
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -235,7 +236,22 @@ def check_duration(mp4):
         d = float(r.stdout.strip())
     except ValueError:
         return [R('F 时长', False, '读不出')]
-    return [R('F 时长', abs(d - DUR) < 0.5, f'{d:.2f}s (模板 {DUR}s)')]
+
+    # 从工程里的 film.js 读实际 DUR，读不到就用宽松范围（15~90 秒）。
+    # 原来写死 = DUR（34.8），用户明确说过「不需要卡死 34 秒，15 秒以上都可以」。
+    want = None
+    fj = mp4.parent.parent / 'film.js'
+    if fj.exists():
+        m = re.search(r'const DUR\s*=\s*([\d.]+)', fj.read_text(encoding='utf-8', errors='ignore'))
+        if m:
+            want = float(m.group(1))
+    if want:
+        ok = abs(d - want) < 0.6
+        detail = f'{d:.2f}s (模板 {want}s)'
+    else:
+        ok = 15.0 <= d <= 90.0
+        detail = f'{d:.2f}s (15~90 秒)'
+    return [R('F 时长', ok, detail)]
 
 
 def check_covers(proj):
