@@ -366,7 +366,31 @@ VK.film({
     fr.look.grain = 0.03;
 
     // 网格背景（整片都在，参考视频就是这样）
-    fr.look.under = (ctx) => drawGrid(ctx);
+    fr.look.under = (ctx, tt) => {
+      drawGrid(ctx);
+      // 背景截图：12 个卡片里只有 2~3 个真有图，其余全是纯色空白。
+      // 铺一层低透明度截图，让每一帧都有真实内容。
+      if (IMG && IMG.complete && IMG.naturalWidth) {
+        ctx.save();
+        ctx.globalAlpha = 0.30;
+        const iw = IMG.naturalWidth, ih = IMG.naturalHeight;
+        const sw = iw * 0.72, sx = iw * 0.14;
+        const sh = ih * 0.92, sy = ih * 0.04;
+        const th = H * 1.05;
+        const tw = th * sw / sh;
+        const drift = Math.sin(tt * Math.PI * 2 / 11) * 40;
+        ctx.drawImage(IMG, sx, sy, sw, sh, (W - tw) / 2 + drift, -H * 0.03, tw, th);
+        ctx.restore();
+        // 径向遮罩：四周淡出，中间干净
+        const vg = ctx.createRadialGradient(W / 2, H * 0.45, W * 0.2, W / 2, H * 0.45, W * 0.95);
+        vg.addColorStop(0, 'rgba(0,0,0,0.52)');
+        vg.addColorStop(1, 'rgba(0,0,0,0.90)');
+        ctx.save();
+        ctx.fillStyle = vg;
+        ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+      }
+    };
 
     const segs = [
       [T.c1, T.c2, card1], [T.c2, T.c3, card2], [T.c3, T.c4, card3],

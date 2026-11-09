@@ -227,7 +227,7 @@ function card1(fr, lt) {
 /* ---------- 2 GitHub 卡片 ---------- */
 function card2(fr, lt) {
   const a = ss(lt, 0.1, 0.9);
-  const w = 820, h = 440, x = (W - w) / 2, y = 420;
+  const w = 980, h = 560, x = (W - w) / 2, y = 360;
 
   macWindow(fr, x, y, w, h, a, { title: '开源仓库' });
 
@@ -267,7 +267,7 @@ function card3(fr, lt) {
   // 不再画假代码块 —— 原来那两段 `$ tool snapshot` 是 Agent Desktop 的，
   // 小百看板没有 CLI。观众搜不到会取关。
   const a = 1;
-  const w = 880, h = 460, x = (W - w) / 2, y = 400;
+  const w = 980, h = 560, x = (W - w) / 2, y = 360;
 
   macWindow(fr, x, y, w, h, a, { title: '它能做什么' });
 
