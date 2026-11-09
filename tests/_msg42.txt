@@ -1,0 +1,56 @@
+feat: 量化字号检查 + 字幕提到手机 20px
+
+## 新增 check-text-size.py
+
+phone-preview 靠肉眼看，没有判据。这个工具直接从渲染帧上量：
+
+1. 取字幕区（Y 1270~1400）
+2. 找亮像素的包围盒高度 = 实际字高（1080 宽下）
+3. 换算手机像素：字高 × (390 / 1080)
+4. 和下限比（中文 15px 是下限）
+
+不读模板源码（变量太多容易读错），直接从画面上量，量的就是用户看到的。
+
+## 量出来的问题
+
+  工程       字高(1080)   手机px   判断
+  ajin          51px      18.4px   ✓
+  ganhuoju      49px      17.7px   △ 刚好
+  xiaokai       47px      17.0px   △ 刚好
+  weitu         47px      17.0px   △ 刚好
+
+**中文 17px 在手机上能读但不舒服。** 抖音做知识类内容的号，字幕普遍 20-24px。
+
+## 根因：四个模板的字幕字号上限各不相同，而且都偏低
+
+  ajin      Math.min(54, 860/vw)
+  ganhuoju  Math.min(52, 860/vw)
+  xiaokai   Math.min(50, 860/vw)
+  weitu     Math.min(50, 860/vw)
+
+统一改成：
+
+  const size = Math.min(60, Math.round(920 / (vw * 1.0)));
+
+  · 上限 60px（手机 21.7px）
+  · 可用宽度 860 → 920（画布 1080，左右各留 80px）
+  · 短句能到满 60px，长句按宽度自适应缩小
+
+深色底带高度 size*1.8 跟着从 86px 变 108px，不影响安全区
+（安全检查的是 Y=1330 位置，不是高度）。
+
+## 结果
+
+  工程       之前      现在
+  ajin      18.4px →  20.6px  ✓
+  ganhuoju  17.7px →  20.2px  ✓
+  xiaokai   17.0px →  20.6px  ✓
+  weitu     17.0px →  20.6px  ✓
+
+四条全部「够大」。
+
+## 验证
+
+四条 preflight 48 项全过
+四个包 check-package 全部「可以直接上传」
+动感没有退化（ajin/ganhuoju 合格，xiaokai/weitu 偏静）

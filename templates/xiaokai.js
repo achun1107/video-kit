@@ -279,7 +279,7 @@ function subtitles(fr, t) {
 
   const vw = Array.from(s.zh).reduce(
     (n, ch) => n + (/[\u4e00-\u9fff]/.test(ch) ? 1 : (ch === ' ' ? 0.3 : 0.56)), 0);
-  const size = Math.min(50, Math.round(860 / (vw * 1.0)));
+  const size = Math.min(60, Math.round(920 / (vw * 1.0)));
 
   fr.text(s.zh, W / 2, 1330, {
     font: 'sans', size, color: '#FFFFFF', a: a * 0.92,
