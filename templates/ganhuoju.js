@@ -98,37 +98,71 @@ function scrawl(fr, text, x, y, size, a, o) {
 }
 
 /* 截图铺底，统一压暗 */
-function bed(fr, img, dark, z) {
-  // z: 缩放系数（Ken Burns）。传 1.0~1.06 让静止截图一直在缓慢放大，
-  // 不然每张卡 4.4 秒里画面完全不动，看起来像 PPT 播放。
+function bed(fr, img, dark, z, region) {
+  // z: Ken Burns 缩放。region: 显示截图的哪个部位
+  //   'full' 完整（默认）  'top' 顶栏  'mid' 中间正文
+  //   'left' 左侧  'right' 右侧  'bot' 底部
+  //
+  // 为什么要有 region：截图完整显示只占画面 36% 高度，上下 64% 是空底，
+  // 六张卡都用同一张图同一位置，看起来像 PPT 换文案。
   const zoom = z || 1;
-  if (img && img.complete && img.naturalWidth) {
-    // contain：完整显示截图（cover 会裁掉左右两边，项目名和 star 就没了）
-    const ctx = fr.x;
-    const w = W * 0.94 * zoom;
-    const h = w * img.naturalHeight / img.naturalWidth;
-    const x = (W - w) / 2, y = (H - h) / 2;
-    // 先铺一层深色渐变底，把上下空出来的地方填掉
-    const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#0D1117');
-    g.addColorStop(0.5, '#161B22');
-    g.addColorStop(1, '#0D1117');
+  if (!(img && img.complete && img.naturalWidth)) return;
+
+  const ctx = fr.x;
+
+  // 深色渐变底，填掉空出来的地方
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#0D1117');
+  g.addColorStop(0.5, '#161B22');
+  g.addColorStop(1, '#0D1117');
+  ctx.save();
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+
+  const iw = img.naturalWidth, ih = img.naturalHeight;
+
+  // 源图裁剪框（按比例）
+  // 每个区域裁剪成接近方形的比例，放大后才能真正填满画面。
+  // 早期用全宽 + 窄高（比如 top 取 28% 高度），算出来是 5:1 的扁条，
+  // 放大后反而很小很空。
+  let sx = 0, sy = 0, sw = iw, sh = ih;
+  if (region === 'top') {
+    sw = iw * 0.56; sx = iw * 0.22; sh = ih * 0.34; sy = 0;
+  } else if (region === 'mid') {
+    sw = iw * 0.50; sx = iw * 0.10; sh = ih * 0.40; sy = ih * 0.30;
+  } else if (region === 'bot') {
+    sw = iw * 0.48; sx = iw * 0.26; sh = ih * 0.36; sy = ih * 0.64;
+  } else if (region === 'left') {
+    sw = iw * 0.42; sx = 0; sh = ih * 0.52; sy = ih * 0.24;
+  } else if (region === 'right') {
+    sw = iw * 0.38; sx = iw * 0.62; sh = ih * 0.52; sy = ih * 0.18;
+  }
+
+  // 目标框：裁剪区放大到接近满宽（full 保持 0.94 完整显示）
+  const targetW = region && region !== 'full' ? W * 0.90 * zoom : W * 0.94 * zoom;
+  const targetH = targetW * sh / sw;
+  const dx = (W - targetW) / 2;
+  const dy = (H - targetH) / 2;
+
+  // 细边
+  fr.rect(dx - 3, dy - 3, targetW + 6, targetH + 6, { fill: '#30363D', a: 0.9 });
+
+  ctx.save();
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(dx, dy, targetW, targetH, 8);
+  else ctx.rect(dx, dy, targetW, targetH);
+  ctx.clip();
+  ctx.drawImage(img, sx, sy, sw, sh, dx, dy, targetW, targetH);
+  ctx.restore();
+
+  // 压暗
+  if (dark > 0) {
     ctx.save();
-    ctx.fillStyle = g;
+    ctx.fillStyle = `rgba(8,12,16,${dark})`;
     ctx.fillRect(0, 0, W, H);
     ctx.restore();
-    // 再贴完整截图，加一圈细边
-    fr.rect(x - 3, y - 3, w + 6, h + 6, { fill: '#30363D', a: 0.9 });
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, 0, W, H);
-    ctx.clip();
-    ctx.drawImage(img, x, y, w, h);
-    ctx.restore();
-  } else {
-    fr.rect(0, 0, W, H, { fill: '#0E0E0E' });
   }
-  fr.rect(0, 0, W, H, { fill: '#000000', a: dark == null ? 0.62 : dark });
 }
 
 const IMG = new Image();
@@ -200,14 +234,14 @@ function cover(fr, lt) {
 
 /* ---------- 1 大字点名 ---------- */
 function card1(fr, lt) {
-  bed(fr, IMG, 0.66, 1 + 0.06 * Math.min(1, lt / 4.4));
+  bed(fr, IMG, 0.66, 1 + 0.06 * Math.min(1, lt / 4.4), 'top');
   scrawl(fr, NAME, W / 2, 760, 150, 1, { rot: -0.06 });   // 硬切，名字第 0 帧就出
   scrawl(fr, '来了', W / 2 + 60, 940, 96, ss(lt, 0.55, 1.4), { rot: 0.05 });   // 提前出现，别让画面空着
 }
 
 /* ---------- 2 star ---------- */
 function card2(fr, lt) {
-  bed(fr, IMG, 0.6, 1 + 0.06 * Math.min(1, lt / 4.4));
+  bed(fr, IMG, 0.6, 1 + 0.06 * Math.min(1, lt / 4.4), 'bot');
   const star = STATS.star;
   if (star) {
     // 硬切 + 数字快滚：原来 0.2~1.6 秒淡入，切进来时几乎是空的
@@ -222,8 +256,8 @@ function card2(fr, lt) {
 
 /* ---------- 3 最厉害的地方 ---------- */
 function card3(fr, lt) {
-  bed(fr, IMG, 0.64, 1 + 0.06 * Math.min(1, lt / 4.4));
-  scrawl(fr, '它到底能干什么', W / 2, 720, 84, 1, { rot: -0.03 });
+  bed(fr, IMG, 0.64, 1 + 0.04 * Math.min(1, lt / 4.4), 'mid');
+  scrawl(fr, '这款工具到底能干什么', W / 2, 700, 92, 1, { rot: -0.03 });
   if (HEAD) {
     // 按字数分行 + 字号随行长自适应（原来 slice(0,12) 会把「搞定一切」切掉）
     const chars = Array.from(HEAD);
@@ -242,45 +276,31 @@ function card3(fr, lt) {
 
 /* ---------- 4 场景：不管怎么变 ---------- */
 function card4(fr, lt) {
-  bed(fr, IMG, 0.66, 1 + 0.06 * Math.min(1, lt / 4.4));
-  // 从 features[1] 读，不再写死「不管怎么变都能自动适配」
+  bed(fr, IMG, 0.66, 1 + 0.06 * Math.min(1, lt / 4.4), 'left');
+  // 大字手写：features 按逗号拆两行。
+  // 原来写成「第二个亮点」+ 两行小字，字号砍半、气势全丢，还多了机器味标签。
   const f = FEATURES[1];
   const t = String((typeof f === 'string') ? f : (f && (f.title || f.name)) || '');
-  scrawl(fr, '第二个亮点', W / 2, 700, 84, 1, { rot: -0.05 });
-  if (t) {
-    const chars = Array.from(t);
-    const per = Math.min(11, Math.ceil(chars.length / 2));
-    const rows = [];
-    for (let i = 0; i < chars.length; i += per) {
-      rows.push(chars.slice(i, i + per).join(''));
-    }
-    rows.slice(0, 2).forEach((r, i) => {
-      const size = r.length >= 10 ? 72 : 86;
-      scrawl(fr, r, W / 2, 880 + i * 110, size,
-             ss(lt, 0.5 + i * 0.25, 1.5 + i * 0.25), { rot: 0.035 });
-    });
+  const parts = t.split(/[，,、]/).filter(Boolean);
+  const a1 = parts[0] || t || '第二个亮点';
+  const a2 = parts[1] || '';
+  scrawl(fr, a1, W / 2, 700 + (a2 ? 0 : 60), 104, 1, { rot: -0.05 });
+  if (a2) {
+    scrawl(fr, a2, W / 2, 890, 88, ss(lt, 0.55, 1.6), { rot: 0.035 });
   }
 }
 
 /* ---------- 5 降门槛 ---------- */
 function card5(fr, lt) {
-  bed(fr, IMG, 0.62, 1 + 0.06 * Math.min(1, lt / 4.4));
-  // 从 features[2] 读，不再写死「全程不用改代码」
+  bed(fr, IMG, 0.62, 1 + 0.06 * Math.min(1, lt / 4.4), 'right');
   const f = FEATURES[2];
   const t = String((typeof f === 'string') ? f : (f && (f.title || f.name)) || '');
-  scrawl(fr, '第三个亮点', W / 2, 720, 84, 1, { rot: -0.04 });
-  if (t) {
-    const chars = Array.from(t);
-    const per = Math.min(11, Math.ceil(chars.length / 2));
-    const rows = [];
-    for (let i = 0; i < chars.length; i += per) {
-      rows.push(chars.slice(i, i + per).join(''));
-    }
-    rows.slice(0, 2).forEach((r, i) => {
-      const size = r.length >= 10 ? 72 : 86;
-      scrawl(fr, r, W / 2, 890 + i * 110, size,
-             ss(lt, 0.5 + i * 0.25, 1.5 + i * 0.25), { rot: 0.03 });
-    });
+  const parts = t.split(/[，,、]/).filter(Boolean);
+  const a1 = parts[0] || t || '第三个要点';
+  const a2 = parts[1] || '';
+  scrawl(fr, a1, W / 2, 740 + (a2 ? 0 : 60), 100, 1, { rot: -0.04 });
+  if (a2) {
+    scrawl(fr, a2, W / 2, 920, 88, ss(lt, 0.5, 1.5), { rot: 0.03 });
   }
 }
 
