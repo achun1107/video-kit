@@ -54,7 +54,9 @@ function scrawl(fr, text, x, y, size, a, o) {
   const chars = Array.from(text);
   if (!chars.length) return;
 
-  const off = Math.max(1.2, size * 0.020);   // 手写体笔画细，描边收窄
+  // 描边宽度：截图亮起来之后，2px 的描边根本看不出对比度。
+  // 0.045 * size（104px 字 → 4.7px）既压得住亮背景，又不会把细笔画糊掉。
+  const off = Math.max(2.4, size * 0.045);
   const dirs = [[-off, 0], [off, 0], [0, -off], [0, off]];
   const ctx = fr.x;
 
@@ -234,14 +236,14 @@ function cover(fr, lt) {
 
 /* ---------- 1 大字点名 ---------- */
 function card1(fr, lt) {
-  bed(fr, IMG, 0.66, 1 + 0.06 * Math.min(1, lt / 4.4), 'top');
+  bed(fr, IMG, 0.86, 1 + 0.06 * Math.min(1, lt / 4.4), 'top');
   scrawl(fr, NAME, W / 2, 760, 150, 1, { rot: -0.06 });   // 硬切，名字第 0 帧就出
   scrawl(fr, '来了', W / 2 + 60, 940, 96, ss(lt, 0.55, 1.4), { rot: 0.05 });   // 提前出现，别让画面空着
 }
 
 /* ---------- 2 star ---------- */
 function card2(fr, lt) {
-  bed(fr, IMG, 0.6, 1 + 0.06 * Math.min(1, lt / 4.4), 'bot');
+  bed(fr, IMG, 0.86, 1 + 0.06 * Math.min(1, lt / 4.4), 'bot');
   const star = STATS.star;
   if (star) {
     // 硬切 + 数字快滚：原来 0.2~1.6 秒淡入，切进来时几乎是空的
@@ -256,7 +258,7 @@ function card2(fr, lt) {
 
 /* ---------- 3 最厉害的地方 ---------- */
 function card3(fr, lt) {
-  bed(fr, IMG, 0.64, 1 + 0.04 * Math.min(1, lt / 4.4), 'mid');
+  bed(fr, IMG, 0.88, 1 + 0.04 * Math.min(1, lt / 4.4), 'mid');
   scrawl(fr, '这款工具到底能干什么', W / 2, 700, 92, 1, { rot: -0.03 });
   if (HEAD) {
     // 按字数分行 + 字号随行长自适应（原来 slice(0,12) 会把「搞定一切」切掉）
@@ -276,7 +278,7 @@ function card3(fr, lt) {
 
 /* ---------- 4 场景：不管怎么变 ---------- */
 function card4(fr, lt) {
-  bed(fr, IMG, 0.66, 1 + 0.06 * Math.min(1, lt / 4.4), 'left');
+  bed(fr, IMG, 0.88, 1 + 0.06 * Math.min(1, lt / 4.4), 'left');
   // 大字手写：features 按逗号拆两行。
   // 原来写成「第二个亮点」+ 两行小字，字号砍半、气势全丢，还多了机器味标签。
   const f = FEATURES[1];
@@ -292,7 +294,7 @@ function card4(fr, lt) {
 
 /* ---------- 5 降门槛 ---------- */
 function card5(fr, lt) {
-  bed(fr, IMG, 0.62, 1 + 0.06 * Math.min(1, lt / 4.4), 'right');
+  bed(fr, IMG, 0.88, 1 + 0.06 * Math.min(1, lt / 4.4), 'right');
   const f = FEATURES[2];
   const t = String((typeof f === 'string') ? f : (f && (f.title || f.name)) || '');
   const parts = t.split(/[，,、]/).filter(Boolean);
@@ -306,7 +308,7 @@ function card5(fr, lt) {
 
 /* ---------- 6 结论 ---------- */
 function card6(fr, lt) {
-  bed(fr, IMG, 0.7, 1 + 0.06 * Math.min(1, lt / 4.4));
+  bed(fr, IMG, 0.90, 1 + 0.06 * Math.min(1, lt / 4.4));
   const concl = (CT.conclusion || ['完全开源', '拿来就用', '实用性拉满']).slice(0, 3);
   concl.forEach((t, i) => {
     const a = i === 0 ? 1 : ss(lt, 0.25 + i * 0.6, 0.25 + i * 0.6 + 0.9);
